@@ -8,14 +8,14 @@ This app is my personal project.
 1. clone this project
 2. npm install
 3. insert your firebase key in (src/firebase/Firebase.js)
----
 
+```
 import * as firebase from "firebase";
 
 class Firebase {
-    /**
-    * Initialises Firebase
-    */
+
+    // Initialises Firebase
+    
     static initialise() {
 
         // Initialize default app
@@ -32,7 +32,6 @@ class Firebase {
 }
 
 module.exports = Firebase;
-
----
+```
 
 ### this project is not yet complete.
