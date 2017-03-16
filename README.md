@@ -10,4 +10,4 @@ This app is my personal project.
 3. insert your firebase key in (src/firebase/Firebase.js)
 
 
-* this project is not yet complete.
+### this project is not yet complete.
