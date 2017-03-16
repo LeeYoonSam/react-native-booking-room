@@ -17,6 +17,8 @@ import fbDB from '../firebase/Database';
 
 import FloorTabBar from './FloorTabBar';
 
+import SecretText from "../consts/SecretText";
+
 const window = Dimensions.get('window');
 
 var styles = StyleSheet.create({
@@ -162,7 +164,7 @@ class MainFloor extends Component {
     render() {
         return (
             <View style={styles.container} >
-                <StatusBar title="Title" />
+                <StatusBar title={SecretText.APP_TITLE} />
 
                 <ScrollableTabView
                     initialPage={0}

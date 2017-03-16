@@ -22,6 +22,7 @@ import { Sae } from 'react-native-textinput-effects';
 import DismissKeyboard from "dismissKeyboard";
 
 import CommonStyle from "../styles/Common.css";
+import SecretText from "../consts/SecretText";
 
 class Login extends Component {
     constructor(props) {
@@ -70,7 +71,7 @@ class Login extends Component {
             <TouchableWithoutFeedback onPress={() => {DismissKeyboard()}}>
                 <View style={CommonStyle.container}>
                     <View style={styles.formGroup}>
-                        <Text style={styles.title}>AppName</Text>
+                        <Text style={styles.title}>{SecretText.APP_TITLE}</Text>
 
                         <Sae
                             label={'Email Address'}

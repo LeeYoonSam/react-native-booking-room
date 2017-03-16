@@ -251,7 +251,11 @@ class MeetingRoomMain extends Component {
             baseColor = rowData.bookType.color;
         }
 
-        
+        var isMine;
+
+        if(rowData.userID === fbDB.getAuthUid()) {
+            isMine = <Icon name='cube' size={15} color={'blue'} />
+        }
 
         return (
             <TouchableHighlight
