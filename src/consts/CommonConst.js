@@ -23,7 +23,13 @@ module.exports = {
       {id: "m", name: "회의", color: "red"},
       {id: "i", name: "면접", color: "green"},
       {id: "s", name: "스터디", color: "blue"},
-      {id: "e", name: "기타", color: "gray"}
+      {id: "e", name: "기타", color: "goldenrod"}
+  ],
+
+  REPEAT_TYPE: [
+      {id:"one", name:"한번", workday:1, repeat: false},
+      {id:"day", name:"매일", workday:5, repeat: true},
+      {id:"week", name:"매주", workday:1, repeat: true}
   ],
 
     //   M : {id: "m", name: "회의", color: "red"},

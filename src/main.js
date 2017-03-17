@@ -81,8 +81,10 @@ module.exports = React.createClass({
                       navigator={navigator}
                       selectRoomData={route.selectRoomData}
                       selectFloor={route.selectFloor}
+                      selectOriginDate={route.selectOriginDate}
                       selectDate={route.selectDate}
                       selectTime={route.selectTime}
+                      selectData={route.selectData}
                       />);
               break;
         }

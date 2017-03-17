@@ -6,6 +6,7 @@ import {
     Alert,
     TouchableHighlight,
     Dimensions,
+    ActionSheetIOS,
     StyleSheet
 } from 'react-native';
 
@@ -54,7 +55,6 @@ var styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 40/2,
-        backgroundColor: 'cornflowerblue',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -119,6 +119,15 @@ function FIXED_BASETIME() {
 var timeJson = [].concat(CommonConst.TIME_JSON);
 var fixedTimeList = new FIXED_BASETIME;
 var tempList = fixedTimeList.getArr();
+
+var BUTTONS = [
+  '수정하기',
+  '삭제하기',
+  '취소',
+];
+
+var DESTRUCTIVE_INDEX = 1;
+var CANCEL_INDEX = 2;
 
 class MeetingRoomMain extends Component {
     constructor(props) {
@@ -212,6 +221,14 @@ class MeetingRoomMain extends Component {
         // 파이어베이스에서 boolean 처리할지 로컬에서 판단할지 고민!!!!
         if(selectRow.userID !== undefined) {
 
+            // 내가 쓴글일때 수정/삭제 팝업 보여줌
+            if(selectRow.userID === fbDB.getAuthUid()) {
+                console.log("내가쓴글!! 수정 팝업 보여주자!!");
+
+                this.showActionSheet(selectRow);
+                return;
+            }
+
             console.log("onBookPress call userID !== null");
 
             return;
@@ -224,7 +241,66 @@ class MeetingRoomMain extends Component {
             selectFloor: this.props.selectFloor,
             selectDate: this.state.dateStr,
             selectTime: selectRow.hour,
+            selectOriginDate: this.state.date,
         });
+    }
+
+    showActionSheet = (selectRow) => {
+        ActionSheetIOS.showActionSheetWithOptions({
+            options: BUTTONS,
+            cancelButtonIndex: CANCEL_INDEX,
+            destructiveButtonIndex: DESTRUCTIVE_INDEX,
+            tintColor: 'black',
+        },
+        (buttonIndex) => {
+            this.setState({
+                clicked: BUTTONS[buttonIndex]
+            });
+
+            console.log("showActionSheet index: " + buttonIndex);
+
+            switch (buttonIndex) {
+                case CANCEL_INDEX:
+
+                    break;
+                case DESTRUCTIVE_INDEX:
+                Alert.alert(
+                    '',
+                    '예약을 삭제 하시겠습니까?',
+                    [
+                        {text: '삭제', onPress: () => this.fbDeleteBooking(selectRow.hour)},
+                        {text: '취소', onPress: () => console.log('취소!')},
+                    ])
+                    break;
+                default:
+                    // 팝업 띄우기
+                    this.props.navigator.push({
+                        name: 'BookRoom',
+                        selectRoomData: this.props.selectRoomData,
+                        selectFloor: this.props.selectFloor,
+                        selectDate: this.state.dateStr,
+                        selectTime: selectRow.hour,
+                        selectData: selectRow
+                    });
+                    break;
+            }
+
+        });
+    };
+
+    fbDeleteBooking = (beginTime) => {
+        // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
+        // checkMatchUser(yymmdd, floor, roomID, beginTime, callback)
+        fbDB.checkAndDeleteMatchUser(this.state.dateStr, this.props.selectFloor, this.props.selectRoomData.roomID, beginTime, (isSuccess) => {
+            // 삭제 완료
+            if(isSuccess) {
+                Alert.alert('삭제가 완료 되었습니다.');
+                this.onBackPress();
+            } else {
+                Alert.alert('삭제실패. 다시 시도해주세요.');
+            }
+        });
+        // 2. 삭제 완료 팝업 처리 후 뒤로 가기
     }
 
     moveWriteBook = (selectTime) => {
@@ -245,16 +321,22 @@ class MeetingRoomMain extends Component {
     }
 
     _renderTimeTable(rowData) {
-        var baseColor = '#c9c9c9';
+        var baseColor = 'gray';
 
         if(rowData.bookType !== undefined) {
             baseColor = rowData.bookType.color;
         }
 
-        var isMine;
-
+        // 내가 예약한 회의실은 리스트의 시간부분을 다른색으로 해서 구별
+        var isMineColor = 'cornflowerblue';
         if(rowData.userID === fbDB.getAuthUid()) {
-            isMine = <Icon name='cube' size={15} color={'blue'} />
+            // isMine = <Icon name='cube' size={15} color={'blue'} />
+            isMineColor = 'firebrick';
+        }
+
+        var memo = rowData.bookMemo;
+        if(memo === undefined) {
+            memo = '회의실이 비어 있으니 예약이 가능합니다.'
         }
 
         return (
@@ -263,16 +345,14 @@ class MeetingRoomMain extends Component {
                 onPress={() => this.onBookPress(rowData)}>
 
                 <View style={styles.rowContainer}>
-
-                    {isMine}
-                    <View style={styles.rowTimeContainer}>
+                    <View style={[styles.rowTimeContainer, {backgroundColor: isMineColor}]}>
                         <Text style={styles.rowTimeText}>{rowData.hour}</Text>
                     </View>
                     <View style={[styles.rowMemoContainer, {backgroundColor: baseColor}]}>
                         <Text
                             numberOfLines={2}
                             ellipsizeMode='tail'
-                            style={styles.rowMemoTextTitle}>{rowData.bookMemo}</Text>
+                            style={styles.rowMemoTextTitle}>{memo}</Text>
                         <Text style={styles.rowMemoTextUser}>{rowData.userEmail}</Text>
                     </View>
                 </View>

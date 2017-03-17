@@ -10,6 +10,8 @@ import {
     StyleSheet
 } from 'react-native';
 
+import CalendarPicker from '../../library/CalendarPicker/CalendarPicker';
+
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 import fbDB from '../firebase/Database';
@@ -103,19 +105,68 @@ class BookRoom extends Component {
     constructor(props) {
         super(props);
 
-        this.state = {
-            bookMemo: '',
-            bookType: CommonConst.BOOK_TYPE[0],
-        };
+        var selectData = this.props.selectData;
+        var selectOriginDate = this.props.selectOriginDate;
+
+        //  수정일때 데이터 복구 (메모, 회의타입 두가지)
+        if(selectData !== undefined) {
+            var memo = selectData.bookMemo;
+            var type = selectData.bookType;
+
+            var tmpType = CommonConst.BOOK_TYPE[0];
+
+            if(type !== undefined) {
+                for (i = 0; i < CommonConst.BOOK_TYPE.length; i ++) {
+                    if(CommonConst.BOOK_TYPE[i].id === type.id) {
+                        tmpType = CommonConst.BOOK_TYPE[i];
+                        break;
+                    }
+                }
+            }
+
+            this.state = {
+                bookMemo: memo !== undefined ? memo : '',
+                bookType: tmpType,
+            };
+
+        } else {
+            this.state = {
+                bookMemo: '',
+                bookType: CommonConst.BOOK_TYPE[0],
+                repeatType: CommonConst.REPEAT_TYPE[0],
+                expiredDate: selectOriginDate,
+                expiredDateStr: CommonUtil.dateToYYMMDD(selectOriginDate),
+            };
+        }
 
         this.onBackPress = this.onBackPress.bind(this);
         this.setBookType = this.setBookType.bind(this);
+        this.setRepeatType = this.setRepeatType.bind(this);
         this.fbAddBook = this.fbAddBook.bind(this);
         this.checkFbValidFloor = this.checkFbValidFloor.bind(this);
+        this.onDateChange = this.onDateChange.bind(this);
+        this._renderCalendar = this._renderCalendar.bind(this);
     }
+
+
 
     onBackPress() {
         this.props.navigator.pop();
+    }
+
+    // 날짜변경 - 해당날짜에 해당하는 DB데이터 조회
+    onDateChange(date) {
+
+        console.log("onDateChange date: " + date);
+
+        // DB-1. 날짜변경 세팅
+        // setState 이후 바로 사용했더니 적용이 되지 않아 찾아보니 데이터가 렌더링 된후에 작업을 하라고해서 두번째 인자로 렌더링후에 데이터를 가져오도록 변경했다.
+        this.setState({
+            expiredDate: date,
+            expiredDateStr: CommonUtil.dateToYYMMDD(date)
+        }, () => {
+            console.log("finalData: " + this.state.expiredDate);
+        });
     }
 
     setBookType(typeID) {
@@ -145,6 +196,33 @@ class BookRoom extends Component {
                 bookType: CommonConst.BOOK_TYPE[3],
             })
                 break;
+
+            default:
+        }
+    }
+
+    setRepeatType(typeID) {
+        console.log("setRepeatType typeID: " + typeID);
+
+        switch (typeID) {
+            case "one":
+            this.setState({
+                repeatType: CommonConst.REPEAT_TYPE[0],
+            })
+                break;
+
+            case "day":
+            this.setState({
+                repeatType: CommonConst.REPEAT_TYPE[1],
+            })
+                break;
+
+            case "week":
+            this.setState({
+                repeatType: CommonConst.REPEAT_TYPE[2],
+            })
+                break;
+
 
             default:
         }
@@ -242,6 +320,26 @@ class BookRoom extends Component {
 
     }
 
+    _renderCalendar(typeID) {
+        var vCalendar;
+        if(typeID === "day" || typeID === "week") {
+            vCalendar =
+            <View>
+                <CalendarPicker
+                    selectedDate={this.state.expiredDate}
+                    onDateChange={this.onDateChange}
+                    onMonthChange={this.onMonthChange}
+                    minDate={this.props.selectOriginDate}
+                    screenWidth={200}
+                    selectedDayColor={'#5cb2ce'} />
+
+                <Text>{`만료일: ${this.state.expiredDateStr}`}</Text>
+            </View>;
+        }
+
+        return vCalendar;
+    }
+
     render() {
         return (
 
@@ -271,6 +369,38 @@ class BookRoom extends Component {
                             <Text style={styles.bookSectionText}>시간</Text>
                             </View>
                             <Text style={[styles.bookPointText, CommonStyle.textStyleMainColor]}>{`${this.props.selectDate} / ${this.props.selectTime} ~ ${this.props.selectTime + 1}시`}</Text>
+                        </View>
+
+                        <View style={styles.separatedLine} />
+
+                        <View style={styles.viewContainer}>
+                            <View style={styles.iconWithSection}>
+                                <Icon name='clock-o' size={iconSize} color={iconColor} />
+                            <Text style={styles.bookSectionText}>반복주기</Text>
+                            </View>
+
+                            <View style={styles.typeContainer}>
+                                {
+                                    CommonConst.REPEAT_TYPE.map((repeatInfo, i) => {
+                                        var selectBottomColor = repeatInfo.id === this.state.repeatType.id ? '#50829b' : 'transparent';
+
+                                        return (
+                                                <View
+                                                    key={`${repeatInfo}-${i}`}
+                                                    style={[styles.typeView, {borderBottomColor: selectBottomColor}]}>
+
+                                                    <Button
+                                                        onPress={() => this.setRepeatType(repeatInfo.id)}
+                                                        color='black'
+                                                        title={repeatInfo.name}
+                                                        accessibilityLabel={`타입지정 ${repeatInfo.name}`} />
+                                                </View>
+                                        )
+                                    })
+                                }
+                            </View>
+
+                            <View>{this._renderCalendar(this.state.repeatType.id)}</View>
                         </View>
 
                         <View style={styles.separatedLine} />

@@ -1,5 +1,8 @@
 import * as firebase from "firebase";
 
+let rootMeetingRoom = "MeetingRoom/";
+let rootBookData = "BookData/";
+
 class Database {
 
     static getAuthUid() {
@@ -12,9 +15,7 @@ class Database {
 
     static listenFloorList(callback) {
 
-        let floorListPath = "MeetingRoom";
-
-        firebase.database().ref().child(floorListPath).on('value', (snapshot) => {
+        firebase.database().ref().child(rootMeetingRoom).on('value', (snapshot) => {
 
             var floorLists = [];
 
@@ -33,7 +34,7 @@ class Database {
 
     static listenMeetingRoomList(floor, callback) {
 
-        let roomListPath = "MeetingRoom/" + floor;
+        let roomListPath = rootMeetingRoom + floor;
         console.log("listenMeetingRoomList roomListPath: " + roomListPath);
 
         firebase.database().ref().child(roomListPath).on('value', (snapshot) => {
@@ -59,17 +60,15 @@ class Database {
     // 층수, 회의실 유효한지 체크
     static checkValidRoomInfo(floor, roomID, callback) {
 
-        let floorListPath = "MeetingRoom";
-
         var childPath;
 
         // 층수 확인
         if(roomID === null) {
-            childPath = `${floorListPath}/${floor}`;
+            childPath = `${rootMeetingRoom}${floor}`;
         }
         // 회의실 확인
         else {
-            childPath = `${floorListPath}/${floor}/${roomID}`;
+            childPath = `${rootMeetingRoom}${floor}/${roomID}`;
         }
 
         firebase.database().ref().child(childPath).once("value", (snapshot) => {
@@ -84,7 +83,31 @@ class Database {
         });
     }
 
-    // 회의실 예약하기
+    // 해당 예약이 요청한 유저와 일치하는지 확인 후 삭제 처리
+    static checkAndDeleteMatchUser(yymmdd, floor, roomID, beginTime, callback) {
+
+        /*
+        ex) BookData/20170308/12/A/9/userID =>
+        */
+        let bookListBasePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+        let bookListCheckPath = `${bookListBasePath}/userID`;
+        console.log("checkMatchUser bookListBasePath: " + bookListBasePath);
+
+        firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
+            var userID = snapshot.val();
+            if (userID === firebase.auth().currentUser.uid) {
+                // 삭제 처리
+                firebase.database().ref().child(bookListBasePath).remove();
+
+                callback(true);
+            } else {
+                // 삭제 불가
+                callback(false);
+            }
+        });
+    }
+
+    // 회의실 예약 및 수정 하기
     static listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback) {
 
         try {
@@ -100,7 +123,7 @@ class Database {
             bookMemo    : 간단 설명
             bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
             */
-            let bookWritePath = `BookData/${yymmdd}/${floor}/${roomID}/${beginTime}`;
+            let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
             console.log("listenWriteBook bookWritePath: " + bookWritePath);
 
 
@@ -138,7 +161,7 @@ class Database {
         bookMemo    : 간단 설명
         bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
         */
-        let bookListPath = `BookData/${yymmdd}/${floor}/${roomID}`;
+        let bookListPath = `${rootBookData}${yymmdd}/${floor}/${roomID}`;
         console.log("listenDayBookList bookListPath: " + bookListPath);
 
         firebase.database().ref().child(bookListPath).on('value', (snapshot) => {
