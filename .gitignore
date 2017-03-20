@@ -58,4 +58,5 @@ fastlane/screenshots
 src/firebase/Firebase.js
 
 # security text
-scr/consts/SecretText.js
+src/consts/SecretText.js
+
