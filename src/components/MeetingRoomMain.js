@@ -185,6 +185,7 @@ class MeetingRoomMain extends Component {
                 item.endTime = book.endTime;
                 item.bookMemo = book.bookMemo;
                 item.bookType = book.bookType;
+                item.repeatType = book.repeatType;
             });
 
             // // DB-2. callback에서 전체 시간별 예약 리스트를 가져옴
@@ -281,7 +282,8 @@ class MeetingRoomMain extends Component {
                         selectFloor: this.props.selectFloor,
                         selectDate: this.state.dateStr,
                         selectTime: selectRow.hour,
-                        selectData: selectRow
+                        selectData: selectRow,
+                        selectOriginDate: this.state.date,
                     });
                     break;
             }
@@ -302,19 +304,6 @@ class MeetingRoomMain extends Component {
             }
         });
         // 2. 삭제 완료 팝업 처리 후 뒤로 가기
-    }
-
-    moveWriteBook = (selectTime) => {
-        console.log('selectTime: ' + selectTime);
-
-        // 팝업 띄우기
-        this.props.navigator.push({
-            name: 'BookRoom',
-            selectRoomData: this.props.selectRoomData,
-            selectFloor: this.props.selectFloor,
-            selectDate: this.state.dateStr,
-            selectTime: selectTime,
-        });
     }
 
     onBackPress = () => {

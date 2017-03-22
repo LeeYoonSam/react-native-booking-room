@@ -105,15 +105,29 @@ class BookRoom extends Component {
     constructor(props) {
         super(props);
 
+        console.log('BookRoom call1');
         var selectData = this.props.selectData;
         var selectOriginDate = this.props.selectOriginDate;
 
+        console.log('BookRoom call2');
         //  수정일때 데이터 복구 (메모, 회의타입 두가지)
         if(selectData !== undefined) {
+            console.log('BookRoom call3');
             var memo = selectData.bookMemo;
+            var repeatType = selectData.repeatType;
             var type = selectData.bookType;
 
+            var tmpRepeatType = CommonConst.REPEAT_TYPE[0];
             var tmpType = CommonConst.BOOK_TYPE[0];
+
+            if(repeatType !== undefined) {
+                for (i = 0; i < CommonConst.REPEAT_TYPE.length; i ++) {
+                    if(CommonConst.REPEAT_TYPE[i].id === repeatType.id) {
+                        tmpRepeatType = CommonConst.REPEAT_TYPE[i];
+                        break;
+                    }
+                }
+            }
 
             if(type !== undefined) {
                 for (i = 0; i < CommonConst.BOOK_TYPE.length; i ++) {
@@ -124,12 +138,17 @@ class BookRoom extends Component {
                 }
             }
 
+            console.log('BookRoom call4');
             this.state = {
                 bookMemo: memo !== undefined ? memo : '',
                 bookType: tmpType,
+                repeatType: tmpRepeatType,
+                expiredDate: selectOriginDate,
+                expiredDateStr: CommonUtil.dateToYYMMDD(selectOriginDate),
             };
 
         } else {
+            console.log('BookRoom call5');
             this.state = {
                 bookMemo: '',
                 bookType: CommonConst.BOOK_TYPE[0],
@@ -146,9 +165,8 @@ class BookRoom extends Component {
         this.checkFbValidFloor = this.checkFbValidFloor.bind(this);
         this.onDateChange = this.onDateChange.bind(this);
         this._renderCalendar = this._renderCalendar.bind(this);
+        this.bookingFBdb = this.bookingFBdb.bind(this);
     }
-
-
 
     onBackPress() {
         this.props.navigator.pop();
@@ -379,7 +397,38 @@ class BookRoom extends Component {
 
         console.log(Object.values(selectDateAry));
 
-        // 파이어베이스 DB에 쓰기 - listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
+        // 예약 가능한지 DB 체크
+        fbDB.isPossibleBooking(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, callback = (isPossible) => {
+
+            console.log('callback isPossible: ' + isPossible);
+
+            // 이미 예약되어 있으면 팝업 처리
+            if(!isPossible) {
+                Alert.alert('이미 예약되어있는 시간이 있습니다. 확인 후 다시 시도해주세요.');
+                return;
+            } else {
+                this.bookingFBdb(selectDateAry);
+            }
+        });
+
+
+        // // 파이어베이스 DB에 쓰기 - listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
+        // fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
+        //     // 예약 완료
+        //     if(isSuccess) {
+        //         Alert.alert('예약이 완료 되었습니다.');
+        //         this.onBackPress();
+        //     } else {
+        //         Alert.alert('예약실패. 다시 시도해주세요.');
+        //     }
+        //
+        // })
+
+    }
+
+    // 파이어베이스 DB에 쓰기(예약)
+    bookingFBdb(selectDateAry) {
+        // listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
         fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
             // 예약 완료
             if(isSuccess) {
@@ -390,7 +439,6 @@ class BookRoom extends Component {
             }
 
         })
-
     }
 
     _renderCalendar(typeID) {
@@ -448,6 +496,22 @@ class BookRoom extends Component {
 
                         <View style={styles.viewContainer}>
                             <View style={styles.iconWithSection}>
+                                <Icon name='pencil-square-o' size={iconSize} color={iconColor} />
+                            <Text style={styles.bookSectionText}>메모</Text>
+                            </View>
+                            <TextInput
+                                ref='memoInput'
+                                style={styles.input}
+                                value={this.state.bookMemo}
+                                onChangeText={(memo) => this.setState({bookMemo: memo})}
+                                placeholder={'간단하게 메모를 작성해주세요.'}
+                                multiline={true} />
+                        </View>
+
+                        <View style={styles.separatedLine} />
+
+                        <View style={styles.viewContainer}>
+                            <View style={styles.iconWithSection}>
                                 <Icon name='clock-o' size={iconSize} color={iconColor} />
                             <Text style={styles.bookSectionText}>반복주기</Text>
                             </View>
@@ -475,23 +539,6 @@ class BookRoom extends Component {
 
                             <View>{this._renderCalendar(this.state.repeatType.id)}</View>
                         </View>
-
-                        <View style={styles.separatedLine} />
-
-                        <View style={styles.viewContainer}>
-                            <View style={styles.iconWithSection}>
-                                <Icon name='pencil-square-o' size={iconSize} color={iconColor} />
-                            <Text style={styles.bookSectionText}>메모</Text>
-                            </View>
-                            <TextInput
-                                ref='memoInput'
-                                style={styles.input}
-                                value={this.state.bookMemo}
-                                onChangeText={(memo) => this.setState({bookMemo: memo})}
-                                placeholder={'간단하게 메모를 작성해주세요.'}
-                                multiline={true} />
-                        </View>
-
 
                         <View style={styles.separatedLine} />
 

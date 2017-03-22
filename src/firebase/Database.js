@@ -110,19 +110,40 @@ class Database {
         });
     }
 
+
+    // 반복 예약시 해당 날짜와 시간이 비어있는지 체크
+    static isPossibleBooking(selectDateAry, floor, roomID, beginTime, callback) {
+        var isPossible = true;
+
+        // map은 break가 안먹혀서 for문으로 교체 - 중복되는 예약 찾으면 바로 취소 처리
+        for(i = 0; i<selectDateAry.length; i ++) {
+            var yymmdd = selectDateAry[i];
+
+            let timeCheckPath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+
+            firebase.database().ref().child(timeCheckPath).on("value", (snapshot) => {
+                var bookingData = snapshot.val();
+
+                if (bookingData) {
+                    console.log('isPossibleBooking failed timeCheckPath: ' + timeCheckPath);
+
+                    isPossible = false;
+                }
+            });
+
+            console.log('isPossible: ' + isPossible);
+            if(!isPossible)
+                break;
+        }
+
+        callback(isPossible);
+    }
+
     // 회의실 예약 및 수정 하기
     static listenWriteBook(selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, callback) {
 
         try {
             console.log('listenWriteBook: ' + selectDateAry);
-
-            // this.props.tabs.map((tab, i) => {
-            //     var fontColor = this.props.activeTab === i ? 'rgb(59,89,152)' : 'rgb(204,204,204)';
-            //
-            //     return <TouchableOpacity key={tab} onPress={() => this.props.goToPage(i)} style={styles.tab}>
-            //         <Text style={{color: fontColor}}>{tab}</Text>
-            //     </TouchableOpacity>;
-            // }
 
             var groupID = `${floor}_${roomID}_${beginTime}_${repeatType.id}_${bookType.id}_${firebase.auth().currentUser.uid}_${new Date().getTime()}`;
             console.log("listenWriteBook groupID: " + groupID);
@@ -159,38 +180,8 @@ class Database {
 
             callback(true);
 
-            // console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
-            //
-            // /*
-            // ex) BookData/20170308/12/A/9 =>
-            // userID      : 예약자 ID
-            // userEmail   : 예약자 이메일
-            // beginTime   : 회의 시작 시간
-            // endTime     : 회의 종료 시간
-            // modifyDate  : 마지막 수정 날짜
-            // bookMemo    : 간단 설명
-            // bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
-            // */
-            // let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
-            // console.log("listenWriteBook bookWritePath: " + bookWritePath);
-            //
-            //
-            // console.log("FB auth() userID: " + firebase.auth().currentUser.uid + " userName: " + firebase.auth().currentUser.email);
-            //
-            // // firebase.database().ref(bookWritePath).push({
-            // firebase.database().ref(bookWritePath).set({
-            //     userID:firebase.auth().currentUser.uid,
-            //     userEmail:firebase.auth().currentUser.email,
-            //     endTime: endTime,
-            //     modifyDate: new Date(),
-            //     bookMemo: bookMemo,
-            //     bookType: bookType
-            // });
-            //
-            // callback(true);
         } catch (error) {
-            let err = error.toString();
-            Alert.alert(err);
+            console.log('listenWriteBook error: ' + error.toString())
 
             callback(false);
         }
@@ -228,7 +219,8 @@ class Database {
                     endTime: child.val().endTime,
                     modifyDate: child.val().modifyDate,
                     bookMemo: child.val().bookMemo,
-                    bookType: child.val().bookType
+                    bookType: child.val().bookType,
+                    repeatType: child.val().repeatType,
                 });
 
                 bookLists = books;
