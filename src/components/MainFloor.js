@@ -40,30 +40,14 @@ var styles = StyleSheet.create({
 
     title: {
         fontSize: 20,
-        color: 'gray'
+        color: 'white',
+        marginLeft: 10,
     },
 
-    thumb: {
-        width: window.width / 2,
-        height: 200
-    },
-
-    tab: {
-        flex: 1,
-        width: 100,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    tabs: {
-        height: 45,
-        flexDirection: 'row',
-        paddingTop: 5,
-        borderWidth: 1,
-        borderTopWidth: 0,
-        borderLeftWidth: 0,
-        borderRightWidth: 0,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+    titleBG: {
+        backgroundColor:'gray',
+        opacity: 0.6,
+        width: window.width / 2 - 22,
     },
 
     tabView: {
@@ -75,17 +59,23 @@ var styles = StyleSheet.create({
 
     card: {
         borderWidth: 1,
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
         borderColor: 'rgba(0,0,0,0.1)',
         marginTop: 10,
         marginLeft: 12.5,
         width: window.width / 2 - 20,
-        height: 200,
 
         shadowColor: '#ccc',
         shadowOffset: { width: 2, height: 2, },
         shadowOpacity: 0.5,
         shadowRadius: 3,
+
+        justifyContent: 'space-around',
+    },
+
+    roomBG: {
+        width:window.width / 2 - 22,
+        height: 210,
     },
 });
 
@@ -161,6 +151,151 @@ class MainFloor extends Component {
         this.getRoomList(this.state.floors[i.i].floor);
     }
 
+    renderRoom(rowData) {
+        console.log("renderRoom rowData: " + Object.values(rowData));
+
+        var bg;
+
+        switch (rowData.roomTitle) {
+            case "광주":
+            bg = <Image
+                source={require('../../public/images/12_Guangzhou.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+            case "상해":
+            bg = <Image
+                source={require('../../public/images/12_Shanghai.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "홍콩":
+            bg = <Image
+                source={require('../../public/images/12_Hongkong.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "심천":
+            bg = <Image
+                source={require('../../public/images/12_Shenzhen.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+
+            case "두바이":
+            bg = <Image
+                source={require('../../public/images/13_Dubai.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "싱가폴":
+            bg = <Image
+                source={require('../../public/images/13_Singapore.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "상파울로":
+            bg = <Image
+                source={require('../../public/images/13_Saopaulo.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "시드니":
+            bg = <Image
+                source={require('../../public/images/13_Sydney.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "도쿄":
+            bg = <Image
+                source={require('../../public/images/14_Tokyo.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "멕시코시티":
+            bg = <Image
+                source={require('../../public/images/14_Mexicocity.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "쿠알라룸푸르":
+            bg = <Image
+                source={require('../../public/images/14_Kualalumpur.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "성도":
+            bg = <Image
+                source={require('../../public/images/16_Chengdu.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "서안":
+            bg = <Image
+                source={require('../../public/images/16_Xian.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "북경":
+            bg = <Image
+                source={require('../../public/images/16_Beijing.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "심양":
+            bg = <Image
+                source={require('../../public/images/16_Shenyang.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "하얼빈":
+            bg = <Image
+                source={require('../../public/images/16_Haerbin.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            case "청도":
+            bg = <Image
+                source={require('../../public/images/16_Qingdao.jpg')}
+                style={styles.roomBG}
+                />
+            break;
+
+            default:
+
+        }
+
+    console.log("bg: " + bg);
+
+        return <TouchableHighlight
+            style={styles.tabView}
+            underlayColor={'transparent'}
+            onPress={() => this.onPressFloor(rowData)}>
+            <View style={styles.card}>
+                {bg}
+                <View style={styles.titleBG}>
+                    <Text style={styles.title}>{rowData.roomTitle}</Text>
+                </View>
+
+
+            </View>
+        </TouchableHighlight>
+    }
     render() {
         return (
             <View style={styles.container} >
@@ -178,14 +313,7 @@ class MainFloor extends Component {
                                 contentContainerStyle={styles.listContainer}
                                 dataSource={this.state.dataSource}
                                 renderRow={(rowData) =>
-                                    <TouchableHighlight
-                                        style={styles.tabView}
-                                        underlayColor={'transparent'}
-                                        onPress={() => this.onPressFloor(rowData)}>
-                                        <View style={styles.card}>
-                                            <Text style={styles.title}>{rowData.roomTitle}</Text>
-                                        </View>
-                                    </TouchableHighlight>
+                                    this.renderRoom(rowData)
                                 }
                                 />
                         </View>

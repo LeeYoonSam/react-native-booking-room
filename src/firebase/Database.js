@@ -13,6 +13,7 @@ class Database {
         return firebase.auth().currentUser.email;
     }
 
+    // 층목록 가져오기
     static listenFloorList(callback) {
 
         firebase.database().ref().child(rootMeetingRoom).on('value', (snapshot) => {
@@ -32,6 +33,7 @@ class Database {
         })
     }
 
+    // 회의실 목록 가져오기
     static listenMeetingRoomList(floor, callback) {
 
         let roomListPath = rootMeetingRoom + floor;
@@ -47,7 +49,8 @@ class Database {
                 var rooms = roomLists.slice()
                 rooms.push({
                     roomID: child.key,
-                    roomTitle: child.val()
+                    roomTitle: child.val().name,
+                    roomImg: child.val().img
                 });
 
                 roomLists = rooms;
@@ -108,38 +111,83 @@ class Database {
     }
 
     // 회의실 예약 및 수정 하기
-    static listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback) {
+    static listenWriteBook(selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, callback) {
 
         try {
-            console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
+            console.log('listenWriteBook: ' + selectDateAry);
 
-            /*
-            ex) BookData/20170308/12/A/9 =>
-            userID      : 예약자 ID
-            userEmail   : 예약자 이메일
-            beginTime   : 회의 시작 시간
-            endTime     : 회의 종료 시간
-            modifyDate  : 마지막 수정 날짜
-            bookMemo    : 간단 설명
-            bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
-            */
-            let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
-            console.log("listenWriteBook bookWritePath: " + bookWritePath);
+            // this.props.tabs.map((tab, i) => {
+            //     var fontColor = this.props.activeTab === i ? 'rgb(59,89,152)' : 'rgb(204,204,204)';
+            //
+            //     return <TouchableOpacity key={tab} onPress={() => this.props.goToPage(i)} style={styles.tab}>
+            //         <Text style={{color: fontColor}}>{tab}</Text>
+            //     </TouchableOpacity>;
+            // }
 
+            var groupID = `${floor}_${roomID}_${beginTime}_${repeatType.id}_${bookType.id}_${firebase.auth().currentUser.uid}_${new Date().getTime()}`;
+            console.log("listenWriteBook groupID: " + groupID);
 
-            console.log("FB auth() userID: " + firebase.auth().currentUser.uid + " userName: " + firebase.auth().currentUser.email);
+            selectDateAry.map ((yymmdd) => {
+                console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' repeatType: ' + repeatType + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
 
-            // firebase.database().ref(bookWritePath).push({
-            firebase.database().ref(bookWritePath).set({
-                userID:firebase.auth().currentUser.uid,
-                userEmail:firebase.auth().currentUser.email,
-                endTime: endTime,
-                modifyDate: new Date(),
-                bookMemo: bookMemo,
-                bookType: bookType
-            });
+                /*
+                ex) BookData/20170308/12/A/9 =>
+                userID      : 예약자 ID
+                userEmail   : 예약자 이메일
+                beginTime   : 회의 시작 시간
+                endTime     : 회의 종료 시간
+                modifyDate  : 마지막 수정 날짜
+                bookMemo    : 간단 설명
+                bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
+                */
+                let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+                console.log("listenWriteBook bookWritePath: " + bookWritePath);
+                console.log("FB auth() userID: " + firebase.auth().currentUser.uid + " userName: " + firebase.auth().currentUser.email);
+
+                // firebase.database().ref(bookWritePath).push({
+                firebase.database().ref(bookWritePath).set({
+                    userID:firebase.auth().currentUser.uid,
+                    userEmail:firebase.auth().currentUser.email,
+                    groupID: groupID,
+                    endTime: endTime,
+                    modifyDate: new Date(),
+                    bookMemo: bookMemo,
+                    repeatType: repeatType,
+                    bookType: bookType
+                });
+            })
 
             callback(true);
+
+            // console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
+            //
+            // /*
+            // ex) BookData/20170308/12/A/9 =>
+            // userID      : 예약자 ID
+            // userEmail   : 예약자 이메일
+            // beginTime   : 회의 시작 시간
+            // endTime     : 회의 종료 시간
+            // modifyDate  : 마지막 수정 날짜
+            // bookMemo    : 간단 설명
+            // bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
+            // */
+            // let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+            // console.log("listenWriteBook bookWritePath: " + bookWritePath);
+            //
+            //
+            // console.log("FB auth() userID: " + firebase.auth().currentUser.uid + " userName: " + firebase.auth().currentUser.email);
+            //
+            // // firebase.database().ref(bookWritePath).push({
+            // firebase.database().ref(bookWritePath).set({
+            //     userID:firebase.auth().currentUser.uid,
+            //     userEmail:firebase.auth().currentUser.email,
+            //     endTime: endTime,
+            //     modifyDate: new Date(),
+            //     bookMemo: bookMemo,
+            //     bookType: bookType
+            // });
+            //
+            // callback(true);
         } catch (error) {
             let err = error.toString();
             Alert.alert(err);
@@ -175,6 +223,7 @@ class Database {
                 books.push({
                     userID: child.val().userID,
                     userEmail: child.val().userEmail,
+                    groupID: child.val().groupID,
                     beginTime: child.key,
                     endTime: child.val().endTime,
                     modifyDate: child.val().modifyDate,

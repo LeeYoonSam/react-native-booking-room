@@ -180,6 +180,7 @@ class MeetingRoomMain extends Component {
                 var item = tempList[bookPosition];
                 item.userID = book.userID;
                 item.userEmail = book.userEmail;
+                item.groupID = book.groupID;
                 item.beginTime = book.beginTime;
                 item.endTime = book.endTime;
                 item.bookMemo = book.bookMemo;
@@ -338,6 +339,8 @@ class MeetingRoomMain extends Component {
         if(memo === undefined) {
             memo = '회의실이 비어 있으니 예약이 가능합니다.'
         }
+
+        console.log('_renderTimeTable check groupID: ' + rowData.groupID);
 
         return (
             <TouchableHighlight

@@ -229,8 +229,7 @@ class BookRoom extends Component {
     }
 
     // 파이어베이스 DB에 층과 회의실이 있는지 확인후 존재하면 진행
-    checkFbValidFloor(floor, roomID) {
-
+    checkFbValidFloor(floor, roomID, ) {
         // add check valid - 1. 층 확인 - 파베 체크
         // this.props.selectFloor
         if(roomID === null) {
@@ -306,8 +305,82 @@ class BookRoom extends Component {
             return;
         }
 
-        // listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
-        fbDB.listenWriteBook(this.props.selectDate, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.bookType, this.state.bookMemo, (isSuccess) => {
+        var selectDateAry = [];
+        console.log('this.props.selectDate: ' + this.props.selectDate);
+
+        var week = new Array('일', '월', '화', '수', '목', '금', '토');
+
+        // !! for 문 데이터 체크 !!
+        // 매일(workday 5일) 예약
+        if(this.state.repeatType.id === 'day') {
+
+            console.log('매일 반복 일수 체크: ' + CommonUtil.calcDiffDays(this.props.selectDate, this.state.expiredDateStr));
+
+            var repeatCount = CommonUtil.calcDiffDays(this.props.selectDate, this.state.expiredDateStr);
+
+            // 시작일자 세팅 하기
+            var tmpDate = this.props.selectDate;
+
+            var year = tmpDate.substring(0,4);
+            var month = tmpDate.substring(4,6);
+            var day = tmpDate.substring(6,8);
+
+            var startDate = new Date(`${month}/${day}/${year}`);
+
+            // console.log('tmpDate: ' + tmpDate + ' startDate: ' + startDate);
+
+            for(i = 0; i <= repeatCount; i++) {
+                var dayOfWeek = week[startDate.getDay()];
+
+                // 토,일 (주말) 제외하기
+                if(dayOfWeek !== '토' && dayOfWeek !== '일') {
+                    console.log('getDay(): ' + startDate.getDay() + ' 요일체크: ' + dayOfWeek);
+
+                    // yymmdd 배열에 담기
+                    var makeYMD = CommonUtil.dateToYYMMDD(startDate);
+                    selectDateAry.push(makeYMD);
+                }
+
+                // 하루씩 증가 시키기
+                startDate.setDate(startDate.getDate() + 1);
+            }
+        }
+        // 매주 예약
+        else if(this.state.repeatType.id === 'week') {
+            var diffDays = CommonUtil.calcDiffDays(this.props.selectDate, this.state.expiredDateStr);
+
+            // 시작일자 세팅 하기
+            var tmpDate = this.props.selectDate;
+
+            var year = tmpDate.substring(0,4);
+            var month = tmpDate.substring(4,6);
+            var day = tmpDate.substring(6,8);
+
+            var startDate = new Date(`${month}/${day}/${year}`);
+
+            // 주 단위므로 예약 날짜수 / 7로 다음주의 날짜를 구한다.
+            var repeatCount = diffDays / 7;
+
+            for(i = 0; i <= repeatCount; i++) {
+                // 주말체크는 필요없을듯 - 평일을 타겟으로 지정할듯 / 주말을 지정하면 주말에 예약 되도록
+
+                // yymmdd 배열에 담기
+                var makeYMD = CommonUtil.dateToYYMMDD(startDate);
+                selectDateAry.push(makeYMD);
+
+                // 7일씩 증가 시키기
+                startDate.setDate(startDate.getDate() + 7);
+            }
+        }
+        // 한번 one
+        else {
+            selectDateAry.push(this.props.selectDate);
+        }
+
+        console.log(Object.values(selectDateAry));
+
+        // 파이어베이스 DB에 쓰기 - listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
+        fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
             // 예약 완료
             if(isSuccess) {
                 Alert.alert('예약이 완료 되었습니다.');
@@ -325,15 +398,15 @@ class BookRoom extends Component {
         if(typeID === "day" || typeID === "week") {
             vCalendar =
             <View>
+                <Text style={[styles.bookPointText, CommonStyle.textStyleMainColor, {marginTop: 10}]}>{`만료일: ${this.state.expiredDateStr}`}</Text>
+
                 <CalendarPicker
                     selectedDate={this.state.expiredDate}
                     onDateChange={this.onDateChange}
                     onMonthChange={this.onMonthChange}
                     minDate={this.props.selectOriginDate}
-                    screenWidth={200}
+                    screenWidth={150}
                     selectedDayColor={'#5cb2ce'} />
-
-                <Text>{`만료일: ${this.state.expiredDateStr}`}</Text>
             </View>;
         }
 
@@ -466,20 +539,6 @@ class BookRoom extends Component {
             </View>
       )
     }
-
-    // <View>
-    //     {
-    //         CommonConst.BOOK_TYPE.map((bookInfo, i) => {
-    //               return (
-    //                   <Button
-    //                       style={{backgroundColor : bookInfo.color, opacity: 0.7}}
-    //                       onPress={this.setBookType(bookInfo.id)}
-    //                       title={bookInfo.name}
-    //                       accessibilityLabel={`타입지정 ${bookInfo.name}`} />
-    //               )
-    //         })
-    //     }
-    // </View>
 
 }
 

@@ -20,4 +20,30 @@ module.exports = {
     checkValidEmpty(param) {
         return parseInt(this.checkLength(param)) > 0 ? false : true;
     },
+
+    // 몇일 후인지 체크
+    calcDiffDays(startDate, endDate) {
+
+        // console.log('startDate: ' + startDate + ' endDate: ' + endDate);
+
+        var sYear = startDate.substring(0,4);
+        var sMonth = startDate.substring(4,6);
+        var sDay = startDate.substring(6,8);
+        // console.log('sYear: ' + sYear + 'sMonth: ' + sMonth + 'sDay: ' + sDay );
+
+        var eYear = endDate.substring(0,4);
+        var eMonth = endDate.substring(4,6);
+        var eDay = endDate.substring(6,8);
+        // console.log('eYear: ' + eYear + 'eMonth: ' + eMonth + 'eDay: ' + eDay );
+
+        var start = new Date(`${sMonth}/${sDay}/${sYear}`);
+        var end = new Date(`${eMonth}/${eDay}/${eYear}`);
+        // console.log('start: ' + start + ' end: ' + end);
+
+        var timeDiff = Math.abs(end.getTime() - start.getTime());
+        // console.log('timeDiff: ' + timeDiff);
+
+        return Math.ceil(timeDiff / (1000 * 3600 * 24));
+    },
+
 };
