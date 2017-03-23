@@ -100,19 +100,17 @@ var styles = StyleSheet.create({
 
 var iconColor = 'lightsteelblue';
 var iconSize = 15;
+var selectDateAry = [];
 
 class BookRoom extends Component {
     constructor(props) {
         super(props);
 
-        console.log('BookRoom call1');
         var selectData = this.props.selectData;
         var selectOriginDate = this.props.selectOriginDate;
 
-        console.log('BookRoom call2');
         //  수정일때 데이터 복구 (메모, 회의타입 두가지)
         if(selectData !== undefined) {
-            console.log('BookRoom call3');
             var memo = selectData.bookMemo;
             var repeatType = selectData.repeatType;
             var type = selectData.bookType;
@@ -138,7 +136,6 @@ class BookRoom extends Component {
                 }
             }
 
-            console.log('BookRoom call4');
             this.state = {
                 bookMemo: memo !== undefined ? memo : '',
                 bookType: tmpType,
@@ -148,7 +145,6 @@ class BookRoom extends Component {
             };
 
         } else {
-            console.log('BookRoom call5');
             this.state = {
                 bookMemo: '',
                 bookType: CommonConst.BOOK_TYPE[0],
@@ -166,6 +162,14 @@ class BookRoom extends Component {
         this.onDateChange = this.onDateChange.bind(this);
         this._renderCalendar = this._renderCalendar.bind(this);
         this.bookingFBdb = this.bookingFBdb.bind(this);
+        this.checkValidUser = this.checkValidUser.bind(this);
+        this.getRepeatList = this.getRepeatList.bind(this);
+    }
+
+    componentDidMount() {
+        if(this.props.isUpdate) {
+            this.getRepeatList(this.props.selectData.groupID);
+        }
     }
 
     onBackPress() {
@@ -221,6 +225,11 @@ class BookRoom extends Component {
 
     setRepeatType(typeID) {
         console.log("setRepeatType typeID: " + typeID);
+
+        if(this.props.isUpdate) {
+            Alert.alert('수정시에는 반복주기 변경이 불가능 합니다.');
+            return;
+        }
 
         switch (typeID) {
             case "one":
@@ -323,14 +332,18 @@ class BookRoom extends Component {
             return;
         }
 
-        var selectDateAry = [];
         console.log('this.props.selectDate: ' + this.props.selectDate);
 
         var week = new Array('일', '월', '화', '수', '목', '금', '토');
 
+        if(this.props.isUpdate) {
+            console.log('업데이트라서 이미 날짜가 들어있음');
+        }
         // !! for 문 데이터 체크 !!
         // 매일(workday 5일) 예약
-        if(this.state.repeatType.id === 'day') {
+        else if(this.state.repeatType.id === 'day') {
+
+            selectDateAry = [];
 
             console.log('매일 반복 일수 체크: ' + CommonUtil.calcDiffDays(this.props.selectDate, this.state.expiredDateStr));
 
@@ -365,6 +378,8 @@ class BookRoom extends Component {
         }
         // 매주 예약
         else if(this.state.repeatType.id === 'week') {
+            selectDateAry = [];
+
             var diffDays = CommonUtil.calcDiffDays(this.props.selectDate, this.state.expiredDateStr);
 
             // 시작일자 세팅 하기
@@ -392,47 +407,88 @@ class BookRoom extends Component {
         }
         // 한번 one
         else {
+            selectDateAry = [];
+
             selectDateAry.push(this.props.selectDate);
         }
 
         console.log(Object.values(selectDateAry));
 
-        // 예약 가능한지 DB 체크
-        fbDB.isPossibleBooking(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, callback = (isPossible) => {
+        // 일반 예약인지, 수정인지 판단해서 진행
+        if(this.props.isUpdate) {
+            console.log('isUpdate');
+            this.checkValidUser(selectDateAry);
+        } else {
+            console.log('isNotUpdate');
+            // 예약 가능한지 DB 체크
+            fbDB.isPossibleBooking(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, callback = (isPossible) => {
 
-            console.log('callback isPossible: ' + isPossible);
+                console.log('callback isPossible: ' + isPossible);
 
-            // 이미 예약되어 있으면 팝업 처리
-            if(!isPossible) {
-                Alert.alert('이미 예약되어있는 시간이 있습니다. 확인 후 다시 시도해주세요.');
-                return;
-            } else {
+                // 이미 예약되어 있으면 팝업 처리
+                if(!isPossible) {
+                    Alert.alert('이미 예약되어있는 시간이 있습니다. 확인 후 다시 시도해주세요.');
+                    return;
+                } else {
+                    this.bookingFBdb(selectDateAry);
+                }
+            });
+        }
+    }
+
+    // 해당 예약의 groupID 찾고 yymmdd 리스트를 가지고 있음
+    // `현재 사용하지 않음` ------ 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) BookData/yymmdd/floor/roomID/beginTime
+    // `현재 사용하지 않음` ------ 추후에 '일괄 수정'시 this.state.repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
+    getRepeatList(groupID) {
+
+        fbDB.searchGroupId(groupID, callback = (repeatList) => {
+            // var tmpDates = [];
+            selectDateAry = [];
+
+            repeatList.map((repeat) => {
+                selectDateAry.push(repeat.seltedDate);
+
+                // tmpDates.push(`BookData/${repeat.seltedDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${this.props.selectTime}`);
+            });
+
+            // this.setState({
+            //     repeatDates: tmpDates
+            // }, () => {
+            //     console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
+            // });
+        });
+    }
+
+    // 파이어베이스 DB에 쓰기(예약)
+    checkValidUser(selectDateAry) {
+
+        fbDB.checkMatchUser(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, callback = (isMatch) => {
+            console.log("listenWriteBook isMatch: " + isMatch);
+
+            // 사용자 정보 일치
+            if(isMatch) {
                 this.bookingFBdb(selectDateAry);
             }
+            // 사용자 정보 일치하지 않음
+            else {
+                Alert.alert('사용자가 일치하지 않습니다.');
+            }
         });
-
-
-        // // 파이어베이스 DB에 쓰기 - listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
-        // fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
-        //     // 예약 완료
-        //     if(isSuccess) {
-        //         Alert.alert('예약이 완료 되었습니다.');
-        //         this.onBackPress();
-        //     } else {
-        //         Alert.alert('예약실패. 다시 시도해주세요.');
-        //     }
-        //
-        // })
-
     }
 
     // 파이어베이스 DB에 쓰기(예약)
     bookingFBdb(selectDateAry) {
+
         // listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
         fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
             // 예약 완료
             if(isSuccess) {
-                Alert.alert('예약이 완료 되었습니다.');
+                if(this.props.isUpdate) {
+                    Alert.alert('예약이 수정 되었습니다.');
+                } else {
+                    Alert.alert('예약이 완료 되었습니다.');
+                }
+
                 this.onBackPress();
             } else {
                 Alert.alert('예약실패. 다시 시도해주세요.');
@@ -443,7 +499,13 @@ class BookRoom extends Component {
 
     _renderCalendar(typeID) {
         var vCalendar;
-        if(typeID === "day" || typeID === "week") {
+        if(this.props.isUpdate) {
+            vCalendar =
+            <View>
+                <Text style={[styles.bookPointText, CommonStyle.textStyleMainColor, {marginTop: 10}]}>{`만료일: ${this.state.expiredDateStr}`}</Text>
+            </View>;
+        }
+        else if(typeID === "day" || typeID === "week") {
             vCalendar =
             <View>
                 <Text style={[styles.bookPointText, CommonStyle.textStyleMainColor, {marginTop: 10}]}>{`만료일: ${this.state.expiredDateStr}`}</Text>

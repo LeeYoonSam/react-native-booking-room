@@ -85,6 +85,7 @@ module.exports = React.createClass({
                       selectDate={route.selectDate}
                       selectTime={route.selectTime}
                       selectData={route.selectData}
+                      isUpdate={route.isUpdate}
                       />);
               break;
         }

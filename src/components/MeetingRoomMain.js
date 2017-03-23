@@ -144,6 +144,7 @@ class MeetingRoomMain extends Component {
         this.onBookPress = this.onBookPress.bind(this);
         this.onBackPress = this.onBackPress.bind(this);
         this._renderTimeTable = this._renderTimeTable.bind(this);
+        this.getRepeatList = this.getRepeatList.bind(this);
     }
 
     componentWillMount() {
@@ -157,6 +158,27 @@ class MeetingRoomMain extends Component {
     componentDidMount() {
 
         this.getBookList();
+    }
+
+
+    // 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) BookData/yymmdd/floor/roomID/beginTime
+    // 추후에 '일괄 수정'시 this.state.repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
+    getRepeatList(rowData) {
+
+        fbDB.searchGroupId(rowData.groupID, callback = (repeatList) => {
+            var tmpDates = [];
+
+            repeatList.map((repeat) => {
+                tmpDates.push(`BookData/${repeat.seltedDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+            });
+
+            this.setState({
+                repeatDates: tmpDates
+            }, () => {
+                console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
+                this.fbDeleteBooking();
+            });
+        });
     }
 
     // 예약 리스트를 가져와서 해당 날짜에 표시해주기
@@ -218,7 +240,6 @@ class MeetingRoomMain extends Component {
         console.log("onBookPress selectRow: " + Object.values(selectRow));
         console.log("onBookPress userID: " + selectRow.userID);
 
-
         // 이미 예약되어있으면 아무 반응이 없도록 처리
         // 파이어베이스에서 boolean 처리할지 로컬에서 판단할지 고민!!!!
         if(selectRow.userID !== undefined) {
@@ -244,6 +265,7 @@ class MeetingRoomMain extends Component {
             selectDate: this.state.dateStr,
             selectTime: selectRow.hour,
             selectOriginDate: this.state.date,
+            isUpdate: false,
         });
     }
 
@@ -270,7 +292,8 @@ class MeetingRoomMain extends Component {
                     '',
                     '예약을 삭제 하시겠습니까?',
                     [
-                        {text: '삭제', onPress: () => this.fbDeleteBooking(selectRow.hour)},
+                        // {text: '삭제', onPress: () => this.fbDeleteBooking(selectRow.hour)},
+                        {text: '삭제', onPress: () => this.getRepeatList(selectRow)},
                         {text: '취소', onPress: () => console.log('취소!')},
                     ])
                     break;
@@ -284,6 +307,7 @@ class MeetingRoomMain extends Component {
                         selectTime: selectRow.hour,
                         selectData: selectRow,
                         selectOriginDate: this.state.date,
+                        isUpdate: true,
                     });
                     break;
             }
@@ -291,19 +315,21 @@ class MeetingRoomMain extends Component {
         });
     };
 
-    fbDeleteBooking = (beginTime) => {
+    fbDeleteBooking = () => {
         // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
         // checkMatchUser(yymmdd, floor, roomID, beginTime, callback)
-        fbDB.checkAndDeleteMatchUser(this.state.dateStr, this.props.selectFloor, this.props.selectRoomData.roomID, beginTime, (isSuccess) => {
+        // fbDB.checkAndDeleteMatchUser(this.state.dateStr, this.props.selectFloor, this.props.selectRoomData.roomID, beginTime, (isSuccess) => {
+        fbDB.checkAndDeleteMatchUser(this.state.repeatDates, (isSuccess) => {
             // 삭제 완료
             if(isSuccess) {
                 Alert.alert('삭제가 완료 되었습니다.');
-                this.onBackPress();
             } else {
                 Alert.alert('삭제실패. 다시 시도해주세요.');
             }
         });
+
         // 2. 삭제 완료 팝업 처리 후 뒤로 가기
+        this.onBackPress();
     }
 
     onBackPress = () => {
@@ -395,7 +421,7 @@ class MeetingRoomMain extends Component {
                     stickyHeaderHeight={stickyHeight}
                     renderStickyHeader={() =>
                         <View style={{ height: stickyHeight, padding: 10, backgroundColor: 'black', opacity: 0.7, }}>
-                            <Text style={styles.selectedDate}> 선택 날짜 : { `${this.state.date.getFullYear()} / ${this.state.date.getMonth()} / ${this.state.date.getDate()} ${CommonUtil.getDayOfWeek(this.state.date)}요일` } </Text>
+                            <Text style={styles.selectedDate}> 선택 날짜 : { `${this.state.date.getFullYear()} / ${this.state.date.getMonth() + 1} / ${this.state.date.getDate()} ${CommonUtil.getDayOfWeek(this.state.date)}요일` } </Text>
                         </View>
                     }
 
