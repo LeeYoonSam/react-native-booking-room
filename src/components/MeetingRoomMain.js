@@ -394,8 +394,8 @@ class MeetingRoomMain extends Component {
                     }
                     stickyHeaderHeight={stickyHeight}
                     renderStickyHeader={() =>
-                        <View style={{ height: stickyHeight, padding: 10, backgroundColor: 'gray'}}>
-                            <Text style={styles.selectedDate}> Date: { this.state.date.toString() } </Text>
+                        <View style={{ height: stickyHeight, padding: 10, backgroundColor: 'black', opacity: 0.7, }}>
+                            <Text style={styles.selectedDate}> 선택 날짜 : { `${this.state.date.getFullYear()} / ${this.state.date.getMonth()} / ${this.state.date.getDate()} ${CommonUtil.getDayOfWeek(this.state.date)}요일` } </Text>
                         </View>
                     }
 

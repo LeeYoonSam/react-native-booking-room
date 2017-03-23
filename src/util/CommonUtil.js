@@ -46,4 +46,9 @@ module.exports = {
         return Math.ceil(timeDiff / (1000 * 3600 * 24));
     },
 
+    getDayOfWeek(date) {
+        var week = new Array('일', '월', '화', '수', '목', '금', '토');
+        return week[date.getDay()];
+    },
+
 };
