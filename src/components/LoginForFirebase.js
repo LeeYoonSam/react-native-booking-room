@@ -24,6 +24,8 @@ import DismissKeyboard from "dismissKeyboard";
 import CommonStyle from "../styles/Common.css";
 import SecretText from "../consts/SecretText";
 
+import Loading from "./Loading";
+
 class Login extends Component {
     constructor(props) {
         super(props);
@@ -31,11 +33,18 @@ class Login extends Component {
         this.state = {
             email: "",
             password: "",
-            response: ""
+            response: "",
+            showProgress: false,
         };
 
         this.login = this.login.bind(this);
         this.invalidCheck = this.invalidCheck.bind(this);
+    }
+
+    dismissProgress() {
+        this.setState({
+            showProgress: false
+        });
     }
 
     async login() {
@@ -43,33 +52,38 @@ class Login extends Component {
         try {
             await firebase.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
                 .then((userData) => {
-                    console.log("loginSuccess userData: " + userData);
+                    console.log("loginSuccess userData: " + Object.values(userData));
 
-                    this.props.navigator.push({
-                        // name: 'MeetingRoomMain'
-                        name: 'MainFloor'
+                    this.setState({
+                        showProgress: false,
+                    }, () => {
+                        this.props.navigator.push({
+                            // name: 'MeetingRoomMain'
+                            name: 'MainFloor'
+                        });
                     });
                 })
                 .catch((error) =>
                 {
+                    this.dismissProgress();
+
                     Alert.alert('Login Failed. Please try again '+error);
                 });
         } catch (error) {
-            let err = error.toString();
+            this.dismissProgress();
 
+            let err = error.toString();
             Alert.alert(err);
         }
-
-        // this.props.navigator.push({
-        //     // name: 'MeetingRoomMain'
-        //     name: 'MainFloor'
-        // });
     }
 
     render() {
         return (
             <TouchableWithoutFeedback onPress={() => {DismissKeyboard()}}>
                 <View style={CommonStyle.container}>
+                    <Loading
+                        animating={this.state.showProgress}/>
+
                     <View style={styles.formGroup}>
                         <Text style={styles.title}>{SecretText.APP_TITLE}</Text>
 
@@ -115,21 +129,31 @@ class Login extends Component {
     }
 
     invalidCheck() {
-        var lengthCheck = this.state.email.length;
-        var isEmpty = lengthCheck > 0 ? false : true;
-        if(isEmpty) {
-            Alert.alert('please input your eamil address');
-            return;
-        }
+        this.setState({
+            showProgress: true,
+        }, () => {
+            var lengthCheck = this.state.email.length;
+            var isEmpty = lengthCheck > 0 ? false : true;
+            if(isEmpty) {
+                Alert.alert('please input your eamil address');
 
-        lengthCheck = this.state.password.length;
-        isEmpty = lengthCheck > 0 ? false : true;
-        if(isEmpty) {
-            Alert.alert('please input your password');
-            return;
-        }
+                this.dismissProgress();
 
-        this.login();
+                return;
+            }
+
+            lengthCheck = this.state.password.length;
+            isEmpty = lengthCheck > 0 ? false : true;
+            if(isEmpty) {
+                Alert.alert('please input your password');
+
+                this.dismissProgress();
+
+                return;
+            }
+
+            this.login();
+        });
     }
 }
 

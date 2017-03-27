@@ -19,6 +19,9 @@ import FloorTabBar from './FloorTabBar';
 
 import SecretText from "../consts/SecretText";
 
+import Loading from "./Loading";
+
+
 const window = Dimensions.get('window');
 
 var styles = StyleSheet.create({
@@ -90,6 +93,7 @@ class MainFloor extends Component {
             children: [],
             floors: [],
             roomData: [],
+            showProgress: true,
         };
 
         this.onPressFloor = this.onPressFloor.bind(this);
@@ -115,23 +119,30 @@ class MainFloor extends Component {
 
     async getRoomList(currentFloor) {
         try {
-            console.log("call getRoomList currentFloor: " + currentFloor);
 
             this.setState({
-                currentFloor: currentFloor
-            });
-
-            fbDB.listenMeetingRoomList(currentFloor, (roomLists) => {
-                console.log("callback roomLists: " + roomLists);
-                // this.setState({
-                //     rooms: roomLists
-                // });
+                showProgress: true,
+            }, () => {
+                console.log("call getRoomList currentFloor: " + currentFloor);
 
                 this.setState({
-                    roomData: roomLists,
-                    dataSource: this.state.dataSource.cloneWithRows(roomLists),
+                    currentFloor: currentFloor
+                });
+
+                fbDB.listenMeetingRoomList(currentFloor, (roomLists) => {
+                    console.log("callback roomLists: " + roomLists);
+                    // this.setState({
+                    //     rooms: roomLists
+                    // });
+
+                    this.setState({
+                        roomData: roomLists,
+                        dataSource: this.state.dataSource.cloneWithRows(roomLists),
+                        showProgress: false,
+                    });
                 });
             });
+
         } catch (error) {
             console.log(error);
         }
@@ -296,10 +307,19 @@ class MainFloor extends Component {
             </View>
         </TouchableHighlight>
     }
+    
     render() {
+        return this.renderMainFloor();
+    }
+
+    renderMainFloor() {
+
         return (
             <View style={styles.container} >
                 <StatusBar title={SecretText.APP_TITLE} />
+
+                <Loading
+                    animating={this.state.showProgress}/>
 
                 <ScrollableTabView
                     initialPage={0}
@@ -321,7 +341,9 @@ class MainFloor extends Component {
                 </ScrollableTabView>
 
             </View>
-        )}
-    }
+        )
 
-    module.exports = MainFloor;
+    }
+}
+
+module.exports = MainFloor;

@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import fbDB from '../firebase/Database';
 
 import NaviBar from './NaviBar';
+import Loading from "./Loading";
 
 import CommonConst from "../consts/CommonConst";
 import CommonStyle from "../styles/Common.css";
@@ -142,6 +143,7 @@ class BookRoom extends Component {
                 repeatType: tmpRepeatType,
                 expiredDate: selectOriginDate,
                 expiredDateStr: CommonUtil.dateToYYMMDD(selectOriginDate),
+                showProgress: false,
             };
 
         } else {
@@ -151,6 +153,7 @@ class BookRoom extends Component {
                 repeatType: CommonConst.REPEAT_TYPE[0],
                 expiredDate: selectOriginDate,
                 expiredDateStr: CommonUtil.dateToYYMMDD(selectOriginDate),
+                showProgress: false,
             };
         }
 
@@ -174,6 +177,12 @@ class BookRoom extends Component {
 
     onBackPress() {
         this.props.navigator.pop();
+    }
+
+    dismissProgress() {
+        this.setState({
+            showProgress: false
+        });
     }
 
     // 날짜변경 - 해당날짜에 해당하는 DB데이터 조회
@@ -257,35 +266,41 @@ class BookRoom extends Component {
 
     // 파이어베이스 DB에 층과 회의실이 있는지 확인후 존재하면 진행
     checkFbValidFloor(floor, roomID, ) {
-        // add check valid - 1. 층 확인 - 파베 체크
-        // this.props.selectFloor
-        if(roomID === null) {
-            fbDB.checkValidRoomInfo(floor, roomID, (isValid) => {
-                if(isValid === false) {
-                    Alert.alert('존재하지 않는 층입니다.');
-                    this.onBackPress();
-                    return false;
-                } else {
-                    this.checkFbValidFloor(floor, this.props.selectRoomData.roomID);
-                }
-            });
-        }
-        // add check valid - 2. 회의실 확인 - 파베 체크
-        // this.props.selectRoomData.roomTitle
-        // this.props.selectRoomData.roomID
-        else {
-            fbDB.checkValidRoomInfo(floor, roomID, (isValid) => {
-                if(isValid === false) {
-                    Alert.alert('존재하지 않는 회의실 입니다.');
-                    this.onBackPress();
-                    return false;
-                }
-                else {
-                    this.fbAddBook();
-                }
-            });
-        }
 
+        this.setState({
+            showProgress: true
+        }, () => {
+            // add check valid - 1. 층 확인 - 파베 체크
+            // this.props.selectFloor
+            if(roomID === null) {
+                fbDB.checkValidRoomInfo(floor, roomID, (isValid) => {
+                    if(isValid === false) {
+                        Alert.alert('존재하지 않는 층입니다.');
+                        this.dismissProgress();
+                        this.onBackPress();
+                        return false;
+                    } else {
+                        this.checkFbValidFloor(floor, this.props.selectRoomData.roomID);
+                    }
+                });
+            }
+            // add check valid - 2. 회의실 확인 - 파베 체크
+            // this.props.selectRoomData.roomTitle
+            // this.props.selectRoomData.roomID
+            else {
+                fbDB.checkValidRoomInfo(floor, roomID, (isValid) => {
+                    if(isValid === false) {
+                        Alert.alert('존재하지 않는 회의실 입니다.');
+                        this.dismissProgress();
+                        this.onBackPress();
+                        return false;
+                    }
+                    else {
+                        this.fbAddBook();
+                    }
+                });
+            }
+        });
     }
 
     fbAddBook() {
@@ -293,7 +308,7 @@ class BookRoom extends Component {
         // this.props.selectDate
         if(CommonUtil.checkLength(this.props.selectDate) !== 8) {
             Alert.alert('유효한 날짜가 아닙니다.\n다시 시도해주세요.');
-
+            this.dismissProgress();
             this.onBackPress();
 
             return;
@@ -303,7 +318,7 @@ class BookRoom extends Component {
         // this.props.selectTime
         if(CommonUtil.checkValidEmpty(this.props.selectTime)) {
             Alert.alert('유효한 시간이 아닙니다.\n다시 시도해주세요.');
-
+            this.dismissProgress();
             this.onBackPress();
 
             return;
@@ -312,6 +327,9 @@ class BookRoom extends Component {
         // add check valid - 5. 메모 확인 - 유효성 체크
         // this.state.bookMemo
         if(CommonUtil.checkValidEmpty(this.state.bookMemo)) {
+
+            this.dismissProgress();
+
             Alert.alert(
                 '',
                 '회의명 등 간단한 메모를 남겨주세요!',
@@ -328,6 +346,7 @@ class BookRoom extends Component {
         // this.state.bookType
         if(CommonUtil.checkLength(this.state.bookType.id) !== 1) {
             Alert.alert('회의 종류가 선택 되지 않았습니다.');
+            this.dismissProgress();
 
             return;
         }
@@ -428,6 +447,7 @@ class BookRoom extends Component {
                 // 이미 예약되어 있으면 팝업 처리
                 if(!isPossible) {
                     Alert.alert('이미 예약되어있는 시간이 있습니다. 확인 후 다시 시도해주세요.');
+                    this.dismissProgress();
                     return;
                 } else {
                     this.bookingFBdb(selectDateAry);
@@ -472,6 +492,7 @@ class BookRoom extends Component {
             // 사용자 정보 일치하지 않음
             else {
                 Alert.alert('사용자가 일치하지 않습니다.');
+                this.dismissProgress();
             }
         });
     }
@@ -489,11 +510,12 @@ class BookRoom extends Component {
                     Alert.alert('예약이 완료 되었습니다.');
                 }
 
+                this.dismissProgress();
                 this.onBackPress();
             } else {
                 Alert.alert('예약실패. 다시 시도해주세요.');
+                this.dismissProgress();
             }
-
         })
     }
 
@@ -527,6 +549,9 @@ class BookRoom extends Component {
         return (
 
             <View style={styles.container}>
+
+                <Loading
+                    animating={this.state.showProgress}/>
 
                 <NaviBar
                     naviTitle="예약하기"

@@ -125,8 +125,31 @@ class Database {
             /*
             ex) BookData/20170308/12/A/9/userID =>
             */
-
             var isSuccess = true;
+
+            // var newData = {};
+            // seletedDates.map((listPath) => {
+            //     newData = {
+            //         listPath: null
+            //     };
+            // });
+            //
+            // console.log('newData: ' + Object.values(newData));
+            // firebase.database().ref().update(newData);
+
+
+            // var updates = {};
+            // for (var i in seletedDates) {
+            //     var key = seletedDates[i]['.key'];
+            //     if(seletedDates[i].userID === firebase.auth().currentUser.uid){
+            //         updates[key] = null; // setting value to null deletes the key
+            //     } else {
+            //         callback(false);
+            //         return;
+            //     }
+            // }
+            //
+            // firebase.database().ref().update(updates);
 
             seletedDates.map((listPath) => {
                 let bookListCheckPath = `${listPath}/userID`;
@@ -149,31 +172,6 @@ class Database {
         }
 
     }
-
-    // // 해당 예약이 요청한 유저와 일치하는지 확인 후 삭제 처리
-    // static checkAndDeleteMatchUser(yymmdd, floor, roomID, beginTime, callback) {
-    //
-    //     /*
-    //     ex) BookData/20170308/12/A/9/userID =>
-    //     */
-    //     let bookListBasePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
-    //     let bookListCheckPath = `${bookListBasePath}/userID`;
-    //     console.log("checkAndDeleteMatchUser bookListBasePath: " + bookListBasePath);
-    //
-    //     firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
-    //         var userID = snapshot.val();
-    //         if (userID === firebase.auth().currentUser.uid) {
-    //             // 삭제 처리
-    //             firebase.database().ref().child(bookListBasePath).remove();
-    //
-    //             callback(true);
-    //         } else {
-    //             // 삭제 불가
-    //             callback(false);
-    //         }
-    //     });
-    // }
-
 
     // 반복 예약시 해당 날짜와 시간이 비어있는지 체크
     static isPossibleBooking(selectDateAry, floor, roomID, beginTime, callback) {
