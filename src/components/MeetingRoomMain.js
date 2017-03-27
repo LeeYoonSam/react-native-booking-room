@@ -329,6 +329,12 @@ class MeetingRoomMain extends Component {
         });
     };
 
+    dismissProgress() {
+        this.setState({
+            showProgress: false
+        });
+    }
+
     fbDeleteBooking = () => {
 
         this.setState({
@@ -347,9 +353,6 @@ class MeetingRoomMain extends Component {
 
                 this.dismissProgress();
             });
-
-            // 2. 삭제 완료 팝업 처리 후 뒤로 가기
-            this.onBackPress();
         });
     }
 
