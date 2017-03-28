@@ -122,14 +122,14 @@ var timeJson = [].concat(CommonConst.TIME_JSON);
 var fixedTimeList = new FIXED_BASETIME;
 var tempList = fixedTimeList.getArr();
 
-var BUTTONS = [
-  '수정하기',
-  '삭제하기',
-  '취소',
-];
-
-var DESTRUCTIVE_INDEX = 1;
-var CANCEL_INDEX = 2;
+// var BUTTONS = [
+//   '수정하기',
+//   '삭제하기',
+//   '취소',
+// ];
+//
+// var DESTRUCTIVE_INDEX = 1;
+// var CANCEL_INDEX = 2;
 
 class MeetingRoomMain extends Component {
     constructor(props) {
@@ -182,7 +182,7 @@ class MeetingRoomMain extends Component {
                     repeatDates: tmpDates
                 }, () => {
                     console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
-                    this.fbDeleteBooking();
+                    this.fbDeleteBooking(rowData.groupID);
                 });
             });
         })
@@ -283,11 +283,46 @@ class MeetingRoomMain extends Component {
         });
     }
 
+    getActionSheetList = (selectRow) => {
+        var BUTTONS;
+
+        if(selectRow.repeatType.id === "day" || selectRow.repeatType.id === "week") {
+            BUTTONS = [
+                {name: '예약 전체 수정하기', action: 'action_update_all'},
+                {name: '현재 날짜만 수정하기', action: 'action_update_one'},
+                {name: '예약 전체 삭제하기', action: 'action_remove_all'},
+                {name: '현재 날짜만 삭제하기', action: 'action_remove_one'},
+                {name: '취소', action: 'action_cancle'},
+            ];
+        } else {
+            BUTTONS = [
+                {name: '수정하기', action: 'action_update_one'},
+                {name: '삭제하기', action: 'action_remove_one'},
+                {name: '취소', action: 'action_cancle'},
+            ];
+        }
+
+        console.log("getActionSheetList BUTTONS: " + BUTTONS);
+        return BUTTONS;
+    }
+
     showActionSheet = (selectRow) => {
+
+        var BUTTONS = this.getActionSheetList(selectRow);
+        console.log("showActionSheet BUTTONS: " + BUTTONS);
+
+        var buttonNames = [];
+
+        BUTTONS.map((button) => {
+            buttonNames.push(button.name);
+        });
+
+        console.log("showActionSheet BUTTONS.name: " + buttonNames);
+
         ActionSheetIOS.showActionSheetWithOptions({
-            options: BUTTONS,
-            cancelButtonIndex: CANCEL_INDEX,
-            destructiveButtonIndex: DESTRUCTIVE_INDEX,
+            options: buttonNames,
+            cancelButtonIndex: BUTTONS.length -1,
+            // destructiveButtonIndex: DESTRUCTIVE_INDEX,
             tintColor: 'black',
         },
         (buttonIndex) => {
@@ -296,22 +331,16 @@ class MeetingRoomMain extends Component {
             });
 
             console.log("showActionSheet index: " + buttonIndex);
+            var buttonAction = BUTTONS[buttonIndex].action;
 
-            switch (buttonIndex) {
-                case CANCEL_INDEX:
+            switch (buttonAction) {
+                case "action_cancle":
+                    console.log("취소");
+                break;
 
-                    break;
-                case DESTRUCTIVE_INDEX:
-                Alert.alert(
-                    '',
-                    '예약을 삭제 하시겠습니까?',
-                    [
-                        // {text: '삭제', onPress: () => this.fbDeleteBooking(selectRow.hour)},
-                        {text: '삭제', onPress: () => this.getRepeatList(selectRow)},
-                        {text: '취소', onPress: () => console.log('취소!')},
-                    ])
-                    break;
-                default:
+                // 전체 수정
+                case "action_update_all":
+                    console.log("전체수정");
                     // 팝업 띄우기
                     this.props.navigator.push({
                         name: 'BookRoom',
@@ -322,7 +351,54 @@ class MeetingRoomMain extends Component {
                         selectData: selectRow,
                         selectOriginDate: this.state.date,
                         isUpdate: true,
+                        updateType: CommonConst.BOOKING_TYPE.type_update_all,
                     });
+                break;
+
+                // 개별 수정
+                case "action_update_one":
+                    console.log("개별 수정");
+                    // 팝업 띄우기
+                    this.props.navigator.push({
+                        name: 'BookRoom',
+                        selectRoomData: this.props.selectRoomData,
+                        selectFloor: this.props.selectFloor,
+                        selectDate: this.state.dateStr,
+                        selectTime: selectRow.hour,
+                        selectData: selectRow,
+                        selectOriginDate: this.state.date,
+                        isUpdate: true,
+                        updateType: CommonConst.BOOKING_TYPE.type_update_one,
+                    });
+                break;
+
+                // 전체 삭제
+                case "action_remove_all":
+                    console.log("전체삭제");
+                    // Alert.alert(
+                    //     '',
+                    //     `${this.state.clicked.name} 하시겠습니까?`,
+                    //     [
+                    //         {text: '삭제', onPress: () => this.getRepeatList(selectRow)},
+                    //         {text: '취소', onPress: () => console.log('취소!')},
+                    //     ])
+                    break;
+
+                // 개별 삭제
+                case "action_remove_one":
+                    console.log("개별 삭제");
+                    // Alert.alert(
+                    //     '',
+                    //     `${this.state.clicked.name} 하시겠습니까?`,
+                    //     [
+                    //         // {text: '삭제', onPress: () => this.fbDeleteBooking(selectRow.hour)},
+                    //         {text: '삭제', onPress: () => this.getRepeatList(selectRow)},
+                    //         {text: '취소', onPress: () => console.log('취소!')},
+                    //     ])
+                    break;
+
+                default:
+
                     break;
             }
 
@@ -335,7 +411,7 @@ class MeetingRoomMain extends Component {
         });
     }
 
-    fbDeleteBooking = () => {
+    fbDeleteBooking = (groupID) => {
 
         this.setState({
             showProgress: true,
@@ -346,6 +422,14 @@ class MeetingRoomMain extends Component {
             fbDB.checkAndDeleteMatchUser(this.state.repeatDates, (isSuccess) => {
                 // 삭제 완료
                 if(isSuccess) {
+
+                    // if(전체 삭제인지 개별삭제인지 체크 후 ) {
+                    //     // 해당 groupID 삭제
+                    //     fbDB.removeAllBookingGroup(groupID);
+                    // } else {
+                    //     fbDB.removeOneBookingGroup(groupID, this.state.dateStr);
+                    // }
+
                     Alert.alert('삭제가 완료 되었습니다.');
                 } else {
                     Alert.alert('삭제실패. 다시 시도해주세요.');

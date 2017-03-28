@@ -1,4 +1,5 @@
 import * as firebase from "firebase";
+import CommonConst from "../consts/CommonConst";
 
 let rootMeetingRoom = "MeetingRoom/";
 let rootBookData = "BookData/";
@@ -120,39 +121,39 @@ class Database {
     }
 
     // 해당 예약이 요청한 유저와 일치하는지 확인 후 삭제 처리
-    static checkAndDeleteMatchUser(seletedDates, callback) {
+    static checkAndDeleteMatchUser(seletedDates, groupID, yymmdd, isDeleteAll, callback) {
         try {
             /*
             ex) BookData/20170308/12/A/9/userID =>
             */
             var isSuccess = true;
 
-            // var newData = {};
-            // seletedDates.map((listPath) => {
-            //     newData = {
-            //         listPath: null
-            //     };
-            // });
-            //
-            // console.log('newData: ' + Object.values(newData));
-            // firebase.database().ref().update(newData);
+            if(isDeleteAll) {
 
+                // 그룹핑 전체 삭제
+                Database.removeAllBookingGroup(groupID);
 
-            // var updates = {};
-            // for (var i in seletedDates) {
-            //     var key = seletedDates[i]['.key'];
-            //     if(seletedDates[i].userID === firebase.auth().currentUser.uid){
-            //         updates[key] = null; // setting value to null deletes the key
-            //     } else {
-            //         callback(false);
-            //         return;
-            //     }
-            // }
-            //
-            // firebase.database().ref().update(updates);
+                // 반복 예약 전체 삭제
+                seletedDates.map((listPath) => {
+                    let bookListCheckPath = `${listPath}/userID`;
+                    console.log("checkAndDeleteMatchUser bookListBasePath: " + listPath);
 
-            seletedDates.map((listPath) => {
-                let bookListCheckPath = `${listPath}/userID`;
+                    firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
+                        var userID = snapshot.val();
+                        if (userID === firebase.auth().currentUser.uid) {
+                            // 삭제 처리
+                            firebase.database().ref().child(listPath).remove();
+                        } else {
+                            isSuccess = false;
+                        }
+                    });
+                });
+            } else {
+
+                // 백단에서 그룹 매핑 삭제
+                Database.removeOneBookingGroup(groupID, yymmdd)
+
+                let bookListCheckPath = `${seletedDates[0]}/userID`;
                 console.log("checkAndDeleteMatchUser bookListBasePath: " + listPath);
 
                 firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
@@ -164,13 +165,55 @@ class Database {
                         isSuccess = false;
                     }
                 });
-            });
+            }
 
             callback(isSuccess);
         } catch(error) {
             callback(false);
         }
 
+    }
+
+    // 반복예약 삭제 후 groupID에 해당하는 리스트 삭제 처리
+    static removeAllBookingGroup(groupID) {
+        try {
+            let groupIDPath = `${rootGroupData}${groupID}`;
+            console.log("removeBookingGroup groupIDPath: " + groupIDPath);
+
+            firebase.database().ref().child(groupIDPath).remove();
+            console.log("removeAllBookingGroup success");
+
+        } catch(error) {
+            console.log("removeAllBookingGroup error: " + error);
+        }
+    }
+
+    // 반복예약 개별 삭제시 groupID와 yymmdd가 일치하는 부분 삭제 처리
+    static removeOneBookingGroup(groupID, yymmdd) {
+        try {
+            let selectedDatePath = `${rootGroupData}${groupID}/selectedDates`;
+            console.log("removeBookingGroup selectedDatePath: " + selectedDatePath);
+
+            firebase.database().ref().child(selectedDatePath).on("value", (snapshot) => {
+
+                snapshot.forEach((child) => {
+
+                    console.log("removeBookingGroup child: " + Object.values(child) + " child.val(): " + child.val() + " child.key: " + child.key);
+
+                    if(child.val() === yymmdd)
+                    {
+                        // 해당하는 아이디 다이렉트로 삭제
+                        child.ref.remove();
+                        console.log("removeOneBookingGroup success");
+
+                        return;
+                    }
+                });
+            });
+
+        } catch(error) {
+            console.log("removeOneBookingGroup error: " + error);
+        }
     }
 
     // 반복 예약시 해당 날짜와 시간이 비어있는지 체크
@@ -201,7 +244,7 @@ class Database {
         callback(isPossible);
     }
 
-    // 회의실 예약 및 수정 하기
+    // 회의실 예약 하기
     static listenWriteBook(selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, callback) {
 
         try {
@@ -226,18 +269,120 @@ class Database {
                 */
                 let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
 
+                // 한번 예약할때는 groupID 넣지 않음
+                if(repeatType.id === "one") {
+                    // firebase.database().ref(bookWritePath).push({
+                    firebase.database().ref(bookWritePath).set({
+                        userID:firebase.auth().currentUser.uid,
+                        userEmail:firebase.auth().currentUser.email,
+                        endTime: endTime,
+                        modifyDate: new Date(),
+                        bookMemo: bookMemo,
+                        repeatType: repeatType,
+                        bookType: bookType
+                    });
+                }
+                else {
+                    // firebase.database().ref(bookWritePath).push({
+                    firebase.database().ref(bookWritePath).set({
+                        userID:firebase.auth().currentUser.uid,
+                        userEmail:firebase.auth().currentUser.email,
+                        groupID: groupID,
+                        endTime: endTime,
+                        modifyDate: new Date(),
+                        bookMemo: bookMemo,
+                        repeatType: repeatType,
+                        bookType: bookType
+                    });
+                }
+
+            })
+
+            callback(true);
+
+        } catch (error) {
+            console.log('listenWriteBook error: ' + error.toString())
+
+            callback(false);
+        }
+    }
+
+    // 회의실 수정 하기
+    static listenUpdateBook(bookingType, selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, groupID, callback) {
+        /*
+        ex) BookData/20170308/12/A/9 =>
+        userID      : 예약자 ID
+        userEmail   : 예약자 이메일
+        beginTime   : 회의 시작 시간
+        endTime     : 회의 종료 시간
+        modifyDate  : 마지막 수정 날짜
+        bookMemo    : 간단 설명
+        bookType    : [M:회의, I: 면접, S: 스터디, E: 기타]
+        */
+        try {
+
+            var tmpGroupID;
+
+            // 반복 예약중에서 하나만 수정
+            if(bookingType === CommonConst.BOOKING_TYPE.type_update_one) {
+
+                var yymmdd = selectDateAry[0];
+
+                // 백단에서 그룹 매핑 삭제
+                Database.removeOneBookingGroup(groupID, yymmdd)
+
+
+                // 한번 예약으로 변경되므로 그룹ID 생성하지 않음
+                // tmpGroupID = `${floor}_${roomID}_${beginTime}_${repeatType.id}_${bookType.id}_${firebase.auth().currentUser.uid}_${new Date().getTime()}`;
+                // console.log("listenWriteBook groupID: " + groupID);
+
+                // // 그룹 데이터 만들기 - 백단에서 돌아가므로 콜백은 필요 없음
+                // Database.setGroupData(groupID, selectDateAry);
+
+
+                console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' repeatType: ' + repeatType + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
+
+                let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+
                 // firebase.database().ref(bookWritePath).push({
                 firebase.database().ref(bookWritePath).set({
                     userID:firebase.auth().currentUser.uid,
                     userEmail:firebase.auth().currentUser.email,
-                    groupID: groupID,
+                    // groupID: tmpGroupID,
                     endTime: endTime,
                     modifyDate: new Date(),
                     bookMemo: bookMemo,
                     repeatType: repeatType,
                     bookType: bookType
                 });
-            })
+            } else {
+                // 이미 그룹아이디가 매칭되어있기 때문에 skip
+
+                // var groupID = `${floor}_${roomID}_${beginTime}_${repeatType.id}_${bookType.id}_${firebase.auth().currentUser.uid}_${new Date().getTime()}`;
+                // console.log("listenWriteBook groupID: " + groupID);
+                //
+                // // 그룹 데이터 만들기 - 백단에서 돌아가므로 콜백은 필요 없음
+                // Database.setGroupData(groupID, selectDateAry);
+                tmpGroupID = groupID;
+
+                selectDateAry.map ((yymmdd) => {
+                    console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' repeatType: ' + repeatType + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
+
+                    let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+
+                    // firebase.database().ref(bookWritePath).push({
+                    firebase.database().ref(bookWritePath).set({
+                        userID:firebase.auth().currentUser.uid,
+                        userEmail:firebase.auth().currentUser.email,
+                        groupID: tmpGroupID,
+                        endTime: endTime,
+                        modifyDate: new Date(),
+                        bookMemo: bookMemo,
+                        repeatType: repeatType,
+                        bookType: bookType
+                    });
+                })
+            }
 
             callback(true);
 

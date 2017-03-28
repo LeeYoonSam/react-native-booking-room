@@ -32,6 +32,12 @@ module.exports = {
       {id:"week", name:"매주", workday:1, repeat: true}
   ],
 
+  BOOKING_TYPE: {
+      type_write: 0,
+      type_update_all: 1,
+      type_update_one: 2,
+  },
+
     //   M : {id: "m", name: "회의", color: "red"},
     //   I : {id: "i", name: "면접", color: "green"},
     //   S : {id: "s", name: "스터디", color: "blue"},

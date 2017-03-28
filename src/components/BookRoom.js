@@ -171,7 +171,10 @@ class BookRoom extends Component {
 
     componentDidMount() {
         if(this.props.isUpdate) {
-            this.getRepeatList(this.props.selectData.groupID);
+            // 전체 수정일 경우만 리스트를 가져옴
+            if(this.props.updateType === CommonConst.BOOKING_TYPE.type_update_all) {
+                this.getRepeatList(this.props.selectData.groupID);
+            }
         }
     }
 
@@ -357,6 +360,12 @@ class BookRoom extends Component {
 
         if(this.props.isUpdate) {
             console.log('업데이트라서 이미 날짜가 들어있음');
+
+            // 개별 수정일 경우 하나만 담기
+            if(this.props.updateType === CommonConst.BOOKING_TYPE.type_update_one) {
+                selectDateAry = [];
+                selectDateAry.push(this.props.selectDate);
+            }
         }
         // !! for 문 데이터 체크 !!
         // 매일(workday 5일) 예약
@@ -460,6 +469,13 @@ class BookRoom extends Component {
     // `현재 사용하지 않음` ------ 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) BookData/yymmdd/floor/roomID/beginTime
     // `현재 사용하지 않음` ------ 추후에 '일괄 수정'시 this.state.repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
     getRepeatList(groupID) {
+        if(groupID ===  undefined) {
+
+            Alert.alert('반복 예약이 아닙니다.');
+            this.dismissProgress();
+
+            return;
+        }
 
         fbDB.searchGroupId(groupID, callback = (repeatList) => {
             // var tmpDates = [];
@@ -500,23 +516,44 @@ class BookRoom extends Component {
     // 파이어베이스 DB에 쓰기(예약)
     bookingFBdb(selectDateAry) {
 
-        // listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
-        fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
-            // 예약 완료
-            if(isSuccess) {
-                if(this.props.isUpdate) {
-                    Alert.alert('예약이 수정 되었습니다.');
-                } else {
-                    Alert.alert('예약이 완료 되었습니다.');
-                }
+        // 수정 처리
+        if(this.props.isUpdate) {
+            var repeatType = this.state.repeatType;
 
-                this.dismissProgress();
-                this.onBackPress();
-            } else {
-                Alert.alert('예약실패. 다시 시도해주세요.');
-                this.dismissProgress();
+            if(this.props.updateType === CommonConst.BOOKING_TYPE.type_update_one) {
+                repeatType = CommonConst.REPEAT_TYPE[0];
             }
-        })
+
+            // static listenUpdateBook(bookingType, selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, callback)
+            fbDB.listenUpdateBook(this.props.updateType, selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, repeatType, this.state.bookType, this.state.bookMemo, this.props.selectData.groupID, (isSuccess) => {
+                // 예약 완료
+                if(isSuccess) {
+                    Alert.alert('예약이 수정 되었습니다.');
+
+                    this.dismissProgress();
+                    this.onBackPress();
+                } else {
+                    Alert.alert('수정 실패. 다시 시도해주세요.');
+                    this.dismissProgress();
+                }
+            })
+        }
+        // 예약 처리
+        else {
+            // listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
+            fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
+                // 예약 완료
+                if(isSuccess) {
+                    Alert.alert('예약이 완료 되었습니다.');
+
+                    this.dismissProgress();
+                    this.onBackPress();
+                } else {
+                    Alert.alert('예약실패. 다시 시도해주세요.');
+                    this.dismissProgress();
+                }
+            })
+        }
     }
 
     _renderCalendar(typeID) {
