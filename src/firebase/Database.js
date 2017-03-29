@@ -188,7 +188,7 @@ class Database {
             let selectedDatePath = `${rootGroupData}${groupID}/selectedDates`;
             console.log("removeBookingGroup selectedDatePath: " + selectedDatePath);
 
-            firebase.database().ref().child(selectedDatePath).on("value", (snapshot) => {
+            firebase.database().ref().child(selectedDatePath).once("value", (snapshot) => {
 
                 snapshot.forEach((child) => {
                     console.log("removeBookingGroup child: " + Object.values(child) + " child.val(): " + child.val() + " child.key: " + child.key);
@@ -219,7 +219,7 @@ class Database {
 
             let timeCheckPath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
 
-            firebase.database().ref().child(timeCheckPath).on("value", (snapshot) => {
+            firebase.database().ref().child(timeCheckPath).once("value", (snapshot) => {
                 var bookingData = snapshot.val();
 
                 if (bookingData) {
@@ -435,7 +435,7 @@ class Database {
             console.log("searchGroupId groupID: " + groupID)
             let groupDataPath = `${rootGroupData}${groupID}/selectedDates`;
 
-            firebase.database().ref().child(groupDataPath).on('value', function(snapshot) {
+            firebase.database().ref().child(groupDataPath).once('value', function(snapshot) {
 
                 console.log("searchGroupId snapshot: " + Object.values(snapshot));
 
