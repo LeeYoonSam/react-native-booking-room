@@ -5,6 +5,8 @@ let rootMeetingRoom = "MeetingRoom/";
 let rootBookData = "BookData/";
 let rootGroupData = "GroupData/";
 
+var count = 0;
+
 class Database {
 
     static getAuthUid() {
@@ -121,39 +123,20 @@ class Database {
     }
 
     // 해당 예약이 요청한 유저와 일치하는지 확인 후 삭제 처리
-    static checkAndDeleteMatchUser(seletedDates, groupID, yymmdd, isDeleteAll, callback) {
+    static checkAndDeleteMatchUser(seletedDates, isRemoveAll, callback) {
         try {
+            console.log("count: " + count);
+            count ++;
             /*
             ex) BookData/20170308/12/A/9/userID =>
             */
             var isSuccess = true;
 
-            if(isDeleteAll) {
+            console.log("checkAndDeleteMatchUser seletedDates: " + Object.values(seletedDates) + "isRemoveAll: " + isRemoveAll);
 
-                // 그룹핑 전체 삭제
-                Database.removeAllBookingGroup(groupID);
-
-                // 반복 예약 전체 삭제
-                seletedDates.map((listPath) => {
-                    let bookListCheckPath = `${listPath}/userID`;
-                    console.log("checkAndDeleteMatchUser bookListBasePath: " + listPath);
-
-                    firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
-                        var userID = snapshot.val();
-                        if (userID === firebase.auth().currentUser.uid) {
-                            // 삭제 처리
-                            firebase.database().ref().child(listPath).remove();
-                        } else {
-                            isSuccess = false;
-                        }
-                    });
-                });
-            } else {
-
-                // 백단에서 그룹 매핑 삭제
-                Database.removeOneBookingGroup(groupID, yymmdd)
-
-                let bookListCheckPath = `${seletedDates[0]}/userID`;
+            // 반복 예약 전체 삭제
+            seletedDates.map((listPath) => {
+                let bookListCheckPath = `${listPath}/userID`;
                 console.log("checkAndDeleteMatchUser bookListBasePath: " + listPath);
 
                 firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
@@ -161,14 +144,17 @@ class Database {
                     if (userID === firebase.auth().currentUser.uid) {
                         // 삭제 처리
                         firebase.database().ref().child(listPath).remove();
+                        console.log("call remove");
                     } else {
+                        console.log("call remove failed");
                         isSuccess = false;
                     }
                 });
-            }
+            });
 
             callback(isSuccess);
         } catch(error) {
+            console.log("checkAndDeleteMatchUser error: " + error)
             callback(false);
         }
 
@@ -177,18 +163,26 @@ class Database {
     // 반복예약 삭제 후 groupID에 해당하는 리스트 삭제 처리
     static removeAllBookingGroup(groupID) {
         try {
+            if(groupID === undefined) {
+                return;
+            }
+
             let groupIDPath = `${rootGroupData}${groupID}`;
             console.log("removeBookingGroup groupIDPath: " + groupIDPath);
 
-            firebase.database().ref().child(groupIDPath).remove();
-            console.log("removeAllBookingGroup success");
-
+            // firebase.database().ref().child(groupIDPath).remove();
+            firebase.database().ref().child(groupIDPath).once("value", (snapshot) => {
+                if(snapshot !== undefined) {
+                    snapshot.ref.remove();
+                    console.log("removeAllBookingGroup success");
+                }
+            });
         } catch(error) {
             console.log("removeAllBookingGroup error: " + error);
         }
     }
 
-    // 반복예약 개별 삭제시 groupID와 yymmdd가 일치하는 부분 삭제 처리
+    // 반복예약 개별 삭제시 groupID와 yymmdd가 일치하는 날짜 삭제 처리
     static removeOneBookingGroup(groupID, yymmdd) {
         try {
             let selectedDatePath = `${rootGroupData}${groupID}/selectedDates`;
@@ -197,7 +191,6 @@ class Database {
             firebase.database().ref().child(selectedDatePath).on("value", (snapshot) => {
 
                 snapshot.forEach((child) => {
-
                     console.log("removeBookingGroup child: " + Object.values(child) + " child.val(): " + child.val() + " child.key: " + child.key);
 
                     if(child.val() === yymmdd)
@@ -438,26 +431,37 @@ class Database {
 
     static searchGroupId(groupID, callback) {
         try {
+
+            console.log("searchGroupId groupID: " + groupID)
             let groupDataPath = `${rootGroupData}${groupID}/selectedDates`;
 
             firebase.database().ref().child(groupDataPath).on('value', function(snapshot) {
 
+                console.log("searchGroupId snapshot: " + Object.values(snapshot));
+
                 var groupLists = [];
+                if(snapshot === null) {
+                    console.log("searchGroupId call snapshot undefined");
+                    callback(groupLists);
+                    return;
+                }
+
                 snapshot.forEach((child) => {
+                    console.log("searchGroupId child: " + Object.values(child));
 
-                    var seletedDates = groupLists.slice()
-                    seletedDates.push({
-                        seltedDate: child.val()
-                    });
+                    var selectedDates = groupLists.slice()
+                    selectedDates.push({selectedDate: child.val()});
 
-                    groupLists = seletedDates;
+                    groupLists = selectedDates;
                 });
 
+                console.log("searchGroupId groupLists: " + Object.values(groupLists));
                 callback(groupLists);
 
             });
         } catch (error) {
-            callback(null);
+            console.log("searchGroupId error: " + error);
+            callback(undefined);
         }
     }
 

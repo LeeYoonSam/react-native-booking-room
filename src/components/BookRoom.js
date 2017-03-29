@@ -477,7 +477,7 @@ class BookRoom extends Component {
             return;
         }
 
-        fbDB.searchGroupId(groupID, callback = (repeatList) => {
+        fbDB.searchGroupId(groupID, (repeatList) => {
             // var tmpDates = [];
             selectDateAry = [];
 

@@ -122,15 +122,6 @@ var timeJson = [].concat(CommonConst.TIME_JSON);
 var fixedTimeList = new FIXED_BASETIME;
 var tempList = fixedTimeList.getArr();
 
-// var BUTTONS = [
-//   '수정하기',
-//   '삭제하기',
-//   '취소',
-// ];
-//
-// var DESTRUCTIVE_INDEX = 1;
-// var CANCEL_INDEX = 2;
-
 class MeetingRoomMain extends Component {
     constructor(props) {
         super(props);
@@ -148,12 +139,15 @@ class MeetingRoomMain extends Component {
         this.onBackPress = this.onBackPress.bind(this);
         this._renderTimeTable = this._renderTimeTable.bind(this);
         this.getRepeatList = this.getRepeatList.bind(this);
+        this.getActionSheetList = this.getActionSheetList.bind(this);
+        this.showActionSheet = this.showActionSheet.bind(this);
+        this.dismissProgress = this.dismissProgress.bind(this);
+        this.fbDeleteBooking = this.fbDeleteBooking.bind(this);
+
     }
 
     componentWillMount() {
-
         this.setState({
-            // dataSource: this.state.ds.cloneWithRows(CommonConst.TIME)
             dataSource: this.state.ds.cloneWithRows(tempList)
         });
     }
@@ -166,25 +160,55 @@ class MeetingRoomMain extends Component {
 
     // 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) BookData/yymmdd/floor/roomID/beginTime
     // 추후에 '일괄 수정'시 this.state.repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
-    getRepeatList(rowData) {
+    getRepeatList(rowData, isRemoveAll) {
+
+        var repeatCount = 0;
 
         this.setState({
             showProgress: true
         }, () => {
-            fbDB.searchGroupId(rowData.groupID, callback = (repeatList) => {
-                var tmpDates = [];
 
-                repeatList.map((repeat) => {
-                    tmpDates.push(`BookData/${repeat.seltedDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+            // 전체 삭제
+            if(isRemoveAll) {
+                console.log("call getRepeatList 전체 삭제" );
+
+                fbDB.searchGroupId(rowData.groupID, (repeatList) => {
+
+                    console.log("getRepeatList fbDB callback repeatList: " + Object.values(repeatList));
+
+                    var tmpDates = [];
+
+                    console.log("repeatCount: " + repeatCount);
+                    repeatCount ++;
+
+                    repeatList.map((repeat) => {
+                        console.log("getRepeatList repeat.selectedDate: " + repeat.selectedDate);
+
+                        tmpDates.push(`BookData/${repeat.selectedDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+                    });
+
+                    this.setState({
+                        repeatDates: tmpDates,
+                    }, () => {
+                        console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
+                        this.fbDeleteBooking(rowData.groupID, isRemoveAll);
+                    });
                 });
+            }
+            // 개별 삭제
+            else {
+                console.log("call getRepeatList 개별 삭제" );
+
+                var tmpDates = [];
+                tmpDates.push(`BookData/${this.state.dateStr}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
 
                 this.setState({
-                    repeatDates: tmpDates
+                    repeatDates: tmpDates,
                 }, () => {
                     console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
-                    this.fbDeleteBooking(rowData.groupID);
+                    this.fbDeleteBooking(rowData.groupID, isRemoveAll);
                 });
-            });
+            }
         })
     }
 
@@ -197,8 +221,6 @@ class MeetingRoomMain extends Component {
             console.log("getBookList this.state.dateStr: " + this.state.dateStr);
             fixedTimeList = new FIXED_BASETIME;
             tempList = fixedTimeList.getArr();
-
-            console.log("getBookList tempList: " + Object.values(tempList[0]));
 
             // DB-1. 파이어베이스 DB 조회
             // this.state.date(파싱해야함 yymmdd 형식으로)를 이용해서 데이터 조회
@@ -288,16 +310,16 @@ class MeetingRoomMain extends Component {
 
         if(selectRow.repeatType.id === "day" || selectRow.repeatType.id === "week") {
             BUTTONS = [
-                {name: '예약 전체 수정하기', action: 'action_update_all'},
-                {name: '현재 날짜만 수정하기', action: 'action_update_one'},
-                {name: '예약 전체 삭제하기', action: 'action_remove_all'},
-                {name: '현재 날짜만 삭제하기', action: 'action_remove_one'},
+                {name: '예약 전체 수정', action: 'action_update_all'},
+                {name: '현재 날짜만 수정', action: 'action_update_one'},
+                {name: '예약 전체 삭제', action: 'action_remove_all'},
+                {name: '현재 날짜만 삭제', action: 'action_remove_one'},
                 {name: '취소', action: 'action_cancle'},
             ];
         } else {
             BUTTONS = [
-                {name: '수정하기', action: 'action_update_one'},
-                {name: '삭제하기', action: 'action_remove_one'},
+                {name: '수정', action: 'action_update_one'},
+                {name: '삭제', action: 'action_remove_one'},
                 {name: '취소', action: 'action_cancle'},
             ];
         }
@@ -340,7 +362,7 @@ class MeetingRoomMain extends Component {
 
                 // 전체 수정
                 case "action_update_all":
-                    console.log("전체수정");
+                    console.log("전체 수정");
                     // 팝업 띄우기
                     this.props.navigator.push({
                         name: 'BookRoom',
@@ -374,27 +396,26 @@ class MeetingRoomMain extends Component {
 
                 // 전체 삭제
                 case "action_remove_all":
-                    console.log("전체삭제");
-                    // Alert.alert(
-                    //     '',
-                    //     `${this.state.clicked.name} 하시겠습니까?`,
-                    //     [
-                    //         {text: '삭제', onPress: () => this.getRepeatList(selectRow)},
-                    //         {text: '취소', onPress: () => console.log('취소!')},
-                    //     ])
+                    console.log("전체 삭제");
+                    Alert.alert(
+                        '',
+                        `${this.state.clicked.name} 하시겠습니까?`,
+                        [
+                            {text: '삭제', onPress: () => this.getRepeatList(selectRow, true)},
+                            {text: '취소', onPress: () => console.log('취소!')},
+                        ])
                     break;
 
                 // 개별 삭제
                 case "action_remove_one":
                     console.log("개별 삭제");
-                    // Alert.alert(
-                    //     '',
-                    //     `${this.state.clicked.name} 하시겠습니까?`,
-                    //     [
-                    //         // {text: '삭제', onPress: () => this.fbDeleteBooking(selectRow.hour)},
-                    //         {text: '삭제', onPress: () => this.getRepeatList(selectRow)},
-                    //         {text: '취소', onPress: () => console.log('취소!')},
-                    //     ])
+                    Alert.alert(
+                        '',
+                        `${this.state.clicked.name} 하시겠습니까?`,
+                        [
+                            {text: '삭제', onPress: () => this.getRepeatList(selectRow, false)},
+                            {text: '취소', onPress: () => console.log('취소!')},
+                        ])
                     break;
 
                 default:
@@ -411,31 +432,42 @@ class MeetingRoomMain extends Component {
         });
     }
 
-    fbDeleteBooking = (groupID) => {
+    fbDeleteBooking = (groupID, isRemoveAll) => {
+
+        console.log("fbDeleteBooking groupID: " + groupID + " isRemoveAll: " + isRemoveAll);
 
         this.setState({
             showProgress: true,
         }, () => {
             // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
-            // checkMatchUser(yymmdd, floor, roomID, beginTime, callback)
-            // fbDB.checkAndDeleteMatchUser(this.state.dateStr, this.props.selectFloor, this.props.selectRoomData.roomID, beginTime, (isSuccess) => {
-            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, (isSuccess) => {
+            // checkAndDeleteMatchUser(seletedDates, isRemoveAll, callback)
+
+            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, isRemoveAll, (isSuccess) => {
+
+                console.log("fbDeleteBooking isSuccess: " + isSuccess);
+
                 // 삭제 완료
                 if(isSuccess) {
-
-                    // if(전체 삭제인지 개별삭제인지 체크 후 ) {
-                    //     // 해당 groupID 삭제
-                    //     fbDB.removeAllBookingGroup(groupID);
-                    // } else {
-                    //     fbDB.removeOneBookingGroup(groupID, this.state.dateStr);
-                    // }
-
+                    console.log("call success" );
                     Alert.alert('삭제가 완료 되었습니다.');
-                } else {
-                    Alert.alert('삭제실패. 다시 시도해주세요.');
-                }
 
-                this.dismissProgress();
+                    if(groupID !== undefined) {
+                        if(isRemoveAll) {
+                            fbDB.removeAllBookingGroup(groupID);
+                        } else {
+                            fbDB.removeOneBookingGroup(groupID, this.state.dateStr);
+                        }
+                    }
+
+                    // 다시 불러오기
+                    this.getBookList();
+
+                } else {
+                    console.log("call failed" );
+                    Alert.alert('삭제실패. 다시 시도해주세요.');
+
+                    this.dismissProgress();
+                }
             });
         });
     }
@@ -462,8 +494,6 @@ class MeetingRoomMain extends Component {
         if(memo === undefined) {
             memo = '회의실이 비어 있으니 예약이 가능합니다.'
         }
-
-        console.log('_renderTimeTable check groupID: ' + rowData.groupID);
 
         return (
             <TouchableHighlight
