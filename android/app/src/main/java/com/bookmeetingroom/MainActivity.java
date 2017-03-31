@@ -12,4 +12,9 @@ public class MainActivity extends ReactActivity {
     protected String getMainComponentName() {
         return "BookMeetingRoom";
     }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
 }

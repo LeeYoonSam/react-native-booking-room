@@ -6,9 +6,13 @@ import {
     TextInput,
     ScrollView,
     Alert,
+    Keyboard,
     Dimensions,
+    TouchableWithoutFeedback,
     StyleSheet
 } from 'react-native';
+
+import { hardwareBackPress } from 'react-native-back-android';
 
 import CalendarPicker from '../../library/CalendarPicker/CalendarPicker';
 
@@ -269,6 +273,8 @@ class BookRoom extends Component {
 
     // 파이어베이스 DB에 층과 회의실이 있는지 확인후 존재하면 진행
     checkFbValidFloor(floor, roomID, ) {
+
+        Keyboard.dismiss();
 
         this.setState({
             showProgress: true
@@ -646,16 +652,15 @@ class BookRoom extends Component {
                                         var selectBottomColor = repeatInfo.id === this.state.repeatType.id ? '#50829b' : 'transparent';
 
                                         return (
+                                            <TouchableWithoutFeedback key={`${repeatInfo}-${i}`} onPress={() => {this.setRepeatType(repeatInfo.id) }}>
                                                 <View
-                                                    key={`${repeatInfo}-${i}`}
-                                                    style={[styles.typeView, {borderBottomColor: selectBottomColor}]}>
+                                                    style={[styles.typeView, {borderBottomColor: selectBottomColor, padding: 10}]}>
 
-                                                    <Button
-                                                        onPress={() => this.setRepeatType(repeatInfo.id)}
-                                                        color='black'
-                                                        title={repeatInfo.name}
-                                                        accessibilityLabel={`타입지정 ${repeatInfo.name}`} />
+                                                    <Text style={{fontSize: 16, color: 'black'}}>
+                                                        {repeatInfo.name}
+                                                    </Text>
                                                 </View>
+                                            </TouchableWithoutFeedback>
                                         )
                                     })
                                 }
@@ -678,17 +683,14 @@ class BookRoom extends Component {
                                         var selectBottomColor = bookInfo.id === this.state.bookType.id ? bookInfo.color : 'transparent';
 
                                         return (
-                                            <View
-                                                key={`${bookInfo}-${i}`}
-                                                style={[styles.typeView, {borderBottomColor: selectBottomColor}]}>
+                                            <TouchableWithoutFeedback key={`${bookInfo}-${i}`} onPress={() => {this.setBookType(bookInfo.id) }}>
+                                                <View style={[styles.typeView, {borderBottomColor: selectBottomColor, padding: 10}]}>
 
-                                                <Button
-                                                    onPress={() => this.setBookType(bookInfo.id)}
-                                                    color='black'
-                                                    title={bookInfo.name}
-                                                    accessibilityLabel={`타입지정 ${bookInfo.name}`} />
-                                            </View>
-
+                                                    <Text style={{fontSize: 16, color: 'black'}}>
+                                                        {bookInfo.name}
+                                                    </Text>
+                                                </View>
+                                            </TouchableWithoutFeedback>
                                         )
                                     })
                                 }
@@ -698,19 +700,24 @@ class BookRoom extends Component {
                     </View>
                 </ScrollView>
 
-                <View style={{backgroundColor: '#50829b', margin: 10}}>
-                    <Button
-                        style={{alignItems: 'flex-end', fontWeight: "bold",}}
-                        title='예 약 하 기'
-                        color='azure'
-                        onPress={() => this.checkFbValidFloor(this.props.selectFloor, null)}
-                        accessibilityLabel='예약하기' />
-                </View>
+                <TouchableWithoutFeedback onPress={() => {this.checkFbValidFloor(this.props.selectFloor, null) }}>
+                    <View style={{backgroundColor: '#50829b', alignItems: 'center', borderRadius: 4, margin: 10, padding: 10}}>
+                        <Text
+                            style={{fontSize: 16, fontWeight: "bold", color: 'azure'}}>
+                            예 약 하 기
+                        </Text>
+                    </View>
+                </TouchableWithoutFeedback>
+
 
             </View>
       )
     }
 
 }
+const handleBackButtonPress = ({ navigator }) => {
+    navigator.pop();
+    return true;
+};
 
-module.exports = BookRoom;
+module.exports = hardwareBackPress(BookRoom, handleBackButtonPress);

@@ -13,6 +13,8 @@
     "react": "15.4.2",
     "react-big-calendar": "^0.12.3",
     "react-native": "0.41.2",
+    "react-native-back-android": "^2.0.1",
+    "react-native-bottom-sheet": "^1.0.1",
     "react-native-facebook-login": "^1.4.0",
     "react-native-firebase-auth": "0.0.11",
     "react-native-google-signin": "^0.8.1",

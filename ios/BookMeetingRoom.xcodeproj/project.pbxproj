@@ -5,7 +5,6 @@
 	};
 	objectVersion = 46;
 	objects = {
-
 /* Begin PBXBuildFile section */
 		00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302AC1ABCB8CE00DB3ED1 /* libRCTActionSheet.a */; };
 		00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00C302BA1ABCB90400DB3ED1 /* libRCTGeolocation.a */; };
@@ -47,6 +46,12 @@
 		886BD06EC97E4FDC8A92B86A /* MaterialCommunityIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4E5EBDA1AB504A09B0556B89 /* MaterialCommunityIcons.ttf */; };
 		9E0C513CA3364A08BEC65470 /* SimpleLineIcons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A4966FD1E5F8405085DD666A /* SimpleLineIcons.ttf */; };
 		E3F9983611D649EFB5C0D502 /* libRNVectorIcons.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00A1753E0BB4F0A9676F6AB /* libRNVectorIcons.a */; };
+		D0A7B19D1FE74BE09F947633 /* libRCTFBLogin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 491C8AF1052C4F359504EDA8 /* libRCTFBLogin.a */; };
+		CA8AE68D723F4F649749DCBC /* libRNGoogleSignin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6EF7CA39589840E1AB284EF3 /* libRNGoogleSignin.a */; };
+		4CF80ED9B9584BCA9F75CE52 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F14E3F83C60C465CAA71660A /* libz.tbd */; };
+		BFFDB14BDEE7499990B873C7 /* SafariServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 812F335D2C694648956B2B2F /* SafariServices.framework */; };
+		7EB284F9BD4E444E829D994B /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9C38BEA8848446ABD17130D /* SystemConfiguration.framework */; };
+		B6616549C76744FA96E8C57A /* AddressBook.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B8A8A39798394D2F93B34203 /* AddressBook.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -285,6 +290,14 @@
 		A00A1753E0BB4F0A9676F6AB /* libRNVectorIcons.a */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = archive.ar; path = libRNVectorIcons.a; sourceTree = "<group>"; };
 		A4966FD1E5F8405085DD666A /* SimpleLineIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = SimpleLineIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/SimpleLineIcons.ttf"; sourceTree = "<group>"; };
 		E7D8E79E4E604F5AA581A8B4 /* Zocial.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Zocial.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; };
+		F03806A56B664B9185EFB9A0 /* RCTFBLogin.xcodeproj */ = {isa = PBXFileReference; name = "RCTFBLogin.xcodeproj"; path = "../node_modules/react-native-facebook-login/RCTFBLogin.xcodeproj"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = wrapper.pb-project; explicitFileType = undefined; includeInIndex = 0; };
+		491C8AF1052C4F359504EDA8 /* libRCTFBLogin.a */ = {isa = PBXFileReference; name = "libRCTFBLogin.a"; path = "libRCTFBLogin.a"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = archive.ar; explicitFileType = undefined; includeInIndex = 0; };
+		B62544D47AB447B89D9C96CB /* RNGoogleSignin.xcodeproj */ = {isa = PBXFileReference; name = "RNGoogleSignin.xcodeproj"; path = "../node_modules/react-native-google-signin/ios/RNGoogleSignin.xcodeproj"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = wrapper.pb-project; explicitFileType = undefined; includeInIndex = 0; };
+		6EF7CA39589840E1AB284EF3 /* libRNGoogleSignin.a */ = {isa = PBXFileReference; name = "libRNGoogleSignin.a"; path = "libRNGoogleSignin.a"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = archive.ar; explicitFileType = undefined; includeInIndex = 0; };
+		F14E3F83C60C465CAA71660A /* libz.tbd */ = {isa = PBXFileReference; name = "libz.tbd"; path = "usr/lib/libz.tbd"; sourceTree = SDKROOT; fileEncoding = undefined; lastKnownFileType = sourcecode.text-based-dylib-definition; explicitFileType = undefined; includeInIndex = 0; };
+		812F335D2C694648956B2B2F /* SafariServices.framework */ = {isa = PBXFileReference; name = "SafariServices.framework"; path = "System/Library/Frameworks/SafariServices.framework"; sourceTree = SDKROOT; fileEncoding = undefined; lastKnownFileType = wrapper.framework; explicitFileType = undefined; includeInIndex = 0; };
+		C9C38BEA8848446ABD17130D /* SystemConfiguration.framework */ = {isa = PBXFileReference; name = "SystemConfiguration.framework"; path = "System/Library/Frameworks/SystemConfiguration.framework"; sourceTree = SDKROOT; fileEncoding = undefined; lastKnownFileType = wrapper.framework; explicitFileType = undefined; includeInIndex = 0; };
+		B8A8A39798394D2F93B34203 /* AddressBook.framework */ = {isa = PBXFileReference; name = "AddressBook.framework"; path = "System/Library/Frameworks/AddressBook.framework"; sourceTree = SDKROOT; fileEncoding = undefined; lastKnownFileType = wrapper.framework; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -312,6 +325,12 @@
 				00C302EA1ABCBA2D00DB3ED1 /* libRCTVibration.a in Frameworks */,
 				139FDEF61B0652A700C62182 /* libRCTWebSocket.a in Frameworks */,
 				E3F9983611D649EFB5C0D502 /* libRNVectorIcons.a in Frameworks */,
+				D0A7B19D1FE74BE09F947633 /* libRCTFBLogin.a in Frameworks */,
+				CA8AE68D723F4F649749DCBC /* libRNGoogleSignin.a in Frameworks */,
+				4CF80ED9B9584BCA9F75CE52 /* libz.tbd in Frameworks */,
+				BFFDB14BDEE7499990B873C7 /* SafariServices.framework in Frameworks */,
+				7EB284F9BD4E444E829D994B /* SystemConfiguration.framework in Frameworks */,
+				B6616549C76744FA96E8C57A /* AddressBook.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -479,6 +498,8 @@
 				00C302DF1ABCB9EE00DB3ED1 /* RCTVibration.xcodeproj */,
 				139FDEE61B06529A00C62182 /* RCTWebSocket.xcodeproj */,
 				302765A93AC843AEB0C0D894 /* RNVectorIcons.xcodeproj */,
+				F03806A56B664B9185EFB9A0 /* RCTFBLogin.xcodeproj */,
+				B62544D47AB447B89D9C96CB /* RNGoogleSignin.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -500,6 +521,7 @@
 				00E356EF1AD99517003FC87E /* BookMeetingRoomTests */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				87BD18547CC946AC9B3E837F /* Resources */,
+				8DED2380A0614AAA8EAE660E /* Frameworks */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -539,6 +561,18 @@
 				DB5D638C1E7B81990013E19E /* libRNVectorIcons.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8DED2380A0614AAA8EAE660E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F14E3F83C60C465CAA71660A /* libz.tbd */,
+				812F335D2C694648956B2B2F /* SafariServices.framework */,
+				C9C38BEA8848446ABD17130D /* SystemConfiguration.framework */,
+				B8A8A39798394D2F93B34203 /* AddressBook.framework */,
+			);
+			name = Frameworks;
+			path = "";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1048,6 +1082,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1068,6 +1104,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
@@ -1133,6 +1171,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1163,6 +1203,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1192,6 +1234,8 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.facebook.REACT.BookMeetingRoom-tvOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1216,6 +1260,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.facebook.REACT.BookMeetingRoom-tvOSTests";

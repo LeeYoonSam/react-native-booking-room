@@ -10,7 +10,8 @@ import {
     AsyncStorage,
     StyleSheet,
     dismissKeyboard,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    Keyboard,
 } from "react-native";
 
 import React, {Component} from "react";
@@ -129,6 +130,8 @@ class Login extends Component {
     }
 
     invalidCheck() {
+        Keyboard.dismiss();
+
         this.setState({
             showProgress: true,
         }, () => {

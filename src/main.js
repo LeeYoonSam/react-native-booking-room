@@ -4,6 +4,8 @@ import {
     StyleSheet
 } from 'react-native';
 
+import backAndroid from 'react-native-back-android';
+
 import Firebase from "./firebase/Firebase";
 import * as firebase from "firebase";
 
@@ -21,7 +23,7 @@ const NoBackSwipe = {
     },
 };
 
-module.exports = React.createClass({
+module.exports = backAndroid(React.createClass({
     getInitialState: function() {
         return {
             userLoaded: false,
@@ -125,7 +127,8 @@ module.exports = React.createClass({
                 />
         );
     }
-});
+})
+);
 
 var styles = StyleSheet.create({
     container: {

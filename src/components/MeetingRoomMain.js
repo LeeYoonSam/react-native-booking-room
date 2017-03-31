@@ -7,9 +7,12 @@ import {
     TouchableHighlight,
     Dimensions,
     ActionSheetIOS,
+    Platform,
     StyleSheet
 } from 'react-native';
 
+import { hardwareBackPress } from 'react-native-back-android';
+import RNBottomSheet from 'react-native-bottom-sheet';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 import fbDB from '../firebase/Database';
@@ -89,7 +92,7 @@ var styles = StyleSheet.create({
 });
 
 const stickyHeight = 40;
-const calendarHeight = 300;
+const calendarHeight = (Platform.OS === 'ios') ? 300 : 320;
 
 function FIXED_BASETIME() {
     var staticArr = [
@@ -143,6 +146,7 @@ class MeetingRoomMain extends Component {
         this.showActionSheet = this.showActionSheet.bind(this);
         this.dismissProgress = this.dismissProgress.bind(this);
         this.fbDeleteBooking = this.fbDeleteBooking.bind(this);
+        this.sheetAction = this.sheetAction.bind(this);
 
     }
 
@@ -249,10 +253,6 @@ class MeetingRoomMain extends Component {
                 });
             });
         });
-
-
-
-
     }
 
     // 날짜변경 - 해당날짜에 해당하는 DB데이터 조회
@@ -341,90 +341,103 @@ class MeetingRoomMain extends Component {
 
         console.log("showActionSheet BUTTONS.name: " + buttonNames);
 
-        ActionSheetIOS.showActionSheetWithOptions({
-            options: buttonNames,
-            cancelButtonIndex: BUTTONS.length -1,
-            // destructiveButtonIndex: DESTRUCTIVE_INDEX,
-            tintColor: 'black',
-        },
-        (buttonIndex) => {
-            this.setState({
-                clicked: BUTTONS[buttonIndex]
+        if(Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions({
+                options: buttonNames,
+                cancelButtonIndex: BUTTONS.length -1,
+                // destructiveButtonIndex: DESTRUCTIVE_INDEX,
+                tintColor: 'black',
+            },
+            (buttonIndex) => {
+                this.sheetAction(BUTTONS, buttonIndex, selectRow);
             });
+        } else {
+            RNBottomSheet.showBottomSheetWithOptions({
+                options: buttonNames,
+                cancelButtonIndex: BUTTONS.length -1,
+            }, (buttonIndex) => {
+                this.sheetAction(BUTTONS, buttonIndex, selectRow);
+            });
+        }
+    }
 
-            console.log("showActionSheet index: " + buttonIndex);
-            var buttonAction = BUTTONS[buttonIndex].action;
-
-            switch (buttonAction) {
-                case "action_cancle":
-                    console.log("취소");
-                break;
-
-                // 전체 수정
-                case "action_update_all":
-                    console.log("전체 수정");
-                    // 팝업 띄우기
-                    this.props.navigator.push({
-                        name: 'BookRoom',
-                        selectRoomData: this.props.selectRoomData,
-                        selectFloor: this.props.selectFloor,
-                        selectDate: this.state.dateStr,
-                        selectTime: selectRow.hour,
-                        selectData: selectRow,
-                        selectOriginDate: this.state.date,
-                        isUpdate: true,
-                        updateType: CommonConst.BOOKING_TYPE.type_update_all,
-                    });
-                break;
-
-                // 개별 수정
-                case "action_update_one":
-                    console.log("개별 수정");
-                    // 팝업 띄우기
-                    this.props.navigator.push({
-                        name: 'BookRoom',
-                        selectRoomData: this.props.selectRoomData,
-                        selectFloor: this.props.selectFloor,
-                        selectDate: this.state.dateStr,
-                        selectTime: selectRow.hour,
-                        selectData: selectRow,
-                        selectOriginDate: this.state.date,
-                        isUpdate: true,
-                        updateType: CommonConst.BOOKING_TYPE.type_update_one,
-                    });
-                break;
-
-                // 전체 삭제
-                case "action_remove_all":
-                    console.log("전체 삭제");
-                    Alert.alert(
-                        '',
-                        `${this.state.clicked.name} 하시겠습니까?`,
-                        [
-                            {text: '삭제', onPress: () => this.getRepeatList(selectRow, true)},
-                            {text: '취소', onPress: () => console.log('취소!')},
-                        ])
-                    break;
-
-                // 개별 삭제
-                case "action_remove_one":
-                    console.log("개별 삭제");
-                    Alert.alert(
-                        '',
-                        `${this.state.clicked.name} 하시겠습니까?`,
-                        [
-                            {text: '삭제', onPress: () => this.getRepeatList(selectRow, false)},
-                            {text: '취소', onPress: () => console.log('취소!')},
-                        ])
-                    break;
-
-                default:
-
-                    break;
-            }
-
+    // 액션 시트에서 전달받은 값들로 해당 액션 실행
+    sheetAction(BUTTONS, buttonIndex, selectRow) {
+        this.setState({
+            clicked: BUTTONS[buttonIndex]
         });
-    };
+
+        console.log("showActionSheet index: " + buttonIndex);
+        var buttonAction = BUTTONS[buttonIndex].action;
+
+        switch (buttonAction) {
+            case "action_cancle":
+                console.log("취소");
+            break;
+
+            // 전체 수정
+            case "action_update_all":
+                console.log("전체 수정");
+                // 팝업 띄우기
+                this.props.navigator.push({
+                    name: 'BookRoom',
+                    selectRoomData: this.props.selectRoomData,
+                    selectFloor: this.props.selectFloor,
+                    selectDate: this.state.dateStr,
+                    selectTime: selectRow.hour,
+                    selectData: selectRow,
+                    selectOriginDate: this.state.date,
+                    isUpdate: true,
+                    updateType: CommonConst.BOOKING_TYPE.type_update_all,
+                });
+            break;
+
+            // 개별 수정
+            case "action_update_one":
+                console.log("개별 수정");
+                // 팝업 띄우기
+                this.props.navigator.push({
+                    name: 'BookRoom',
+                    selectRoomData: this.props.selectRoomData,
+                    selectFloor: this.props.selectFloor,
+                    selectDate: this.state.dateStr,
+                    selectTime: selectRow.hour,
+                    selectData: selectRow,
+                    selectOriginDate: this.state.date,
+                    isUpdate: true,
+                    updateType: CommonConst.BOOKING_TYPE.type_update_one,
+                });
+            break;
+
+            // 전체 삭제
+            case "action_remove_all":
+                console.log("전체 삭제");
+                Alert.alert(
+                    '',
+                    `${this.state.clicked.name} 하시겠습니까?`,
+                    [
+                        {text: '삭제', onPress: () => this.getRepeatList(selectRow, true)},
+                        {text: '취소', onPress: () => console.log('취소!')},
+                    ])
+                break;
+
+            // 개별 삭제
+            case "action_remove_one":
+                console.log("개별 삭제");
+                Alert.alert(
+                    '',
+                    `${this.state.clicked.name} 하시겠습니까?`,
+                    [
+                        {text: '삭제', onPress: () => this.getRepeatList(selectRow, false)},
+                        {text: '취소', onPress: () => console.log('취소!')},
+                    ])
+                break;
+
+            default:
+
+                break;
+        }
+    }
 
     dismissProgress() {
         this.setState({
@@ -583,4 +596,9 @@ class MeetingRoomMain extends Component {
     }
 }
 
-module.exports = MeetingRoomMain;
+const handleBackButtonPress = ({ navigator }) => {
+    navigator.pop();
+    return true;
+};
+
+module.exports = hardwareBackPress(MeetingRoomMain, handleBackButtonPress);

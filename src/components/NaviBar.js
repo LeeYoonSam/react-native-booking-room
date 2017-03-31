@@ -3,7 +3,8 @@ import React, {Component} from 'react';
 import {
     View,
     Text,
-    TouchableHighlight
+    TouchableHighlight,
+    Platform
 } from 'react-native';
 
 import CommonStyle from "../styles/Common.css";
@@ -12,7 +13,7 @@ class NaviBar extends Component {
     render() {
         return (
             <View zIndex={1}
-                style={CommonStyle.topContainer}>
+                style={[CommonStyle.topContainer, {marginTop: (Platform.OS === 'ios') ? 22 : 0}]}>
                 <TouchableHighlight
                     underlayColor={'transparent'}
                     onPress={this.props.onBackPress}>

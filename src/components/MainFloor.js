@@ -11,6 +11,8 @@ import {
     StyleSheet
 } from 'react-native';
 
+import { hardwareBackPress, exitApp } from 'react-native-back-android';
+
 import StatusBar from './StatusBar';
 import ScrollableTabView, { ScrollableTabBar, } from 'react-native-scrollable-tab-view';
 import fbDB from '../firebase/Database';
@@ -83,6 +85,11 @@ var styles = StyleSheet.create({
 });
 
 class MainFloor extends Component {
+    handleHardwareBackPress() {
+        console.log('* Scene1 back press');
+        exitApp();
+        return true;
+    }
 
     constructor(props) {
         super(props);
@@ -307,7 +314,7 @@ class MainFloor extends Component {
             </View>
         </TouchableHighlight>
     }
-    
+
     render() {
         return this.renderMainFloor();
     }

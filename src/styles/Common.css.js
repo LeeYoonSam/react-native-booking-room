@@ -49,11 +49,6 @@ const Common = {
         fontWeight: "500"
     },
 
-    statusbar: {
-        backgroundColor: '#fff',
-        height: 22,
-    },
-
     topContainer: {
       flexDirection: 'row',
       justifyContent: 'flex-start',
@@ -62,7 +57,6 @@ const Common = {
       borderBottomColor: '#eee',
       borderColor: 'transparent',
       borderWidth: 1,
-      marginTop: 22,
       marginBottom: 1,
       height:44,
   },
