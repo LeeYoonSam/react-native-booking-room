@@ -103,8 +103,12 @@ class MainFloor extends Component {
             showProgress: true,
         };
 
+        this.handleChangeTab = this.handleChangeTab.bind(this);
         this.onPressFloor = this.onPressFloor.bind(this);
         this.getRoomList = this.getRoomList.bind(this);
+        this.renderRoom = this.renderRoom.bind(this);
+        this.renderMainFloor = this.renderMainFloor.bind(this);
+
     }
 
     async componentDidMount() {
@@ -114,9 +118,9 @@ class MainFloor extends Component {
                 this.setState({
                     floors: floorLists,
                     currentFloor: floorLists[0].floor,
+                }, () => {
+                    this.getRoomList(this.state.currentFloor);
                 });
-
-                this.getRoomList(this.state.currentFloor);
             });
 
         } catch (error) {
@@ -165,8 +169,13 @@ class MainFloor extends Component {
         });
     }
 
+    // i가 객체로 만들어져 있어 i.i로 해야 position을 가져올수 있다.
     handleChangeTab = (i, ref, from,) => {
-        this.getRoomList(this.state.floors[i.i].floor);
+        try {
+            this.getRoomList(this.state.floors[i.i].floor);
+        } catch (error) {
+            console.log("handleChangeTab: " + error)
+        }
     }
 
     renderRoom(rowData) {
