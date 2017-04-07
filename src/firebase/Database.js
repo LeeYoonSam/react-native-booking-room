@@ -1,9 +1,12 @@
 import * as firebase from "firebase";
 import CommonConst from "../consts/CommonConst";
+import CommonUtil from "../util/CommonUtil";
 
 let rootMeetingRoom = "MeetingRoom/";
 let rootBookData = "BookData/";
 let rootGroupData = "GroupData/";
+let rootUserData = "UserData/";
+let rootNotificationGroup = "NotificationGroup/";
 
 var count = 0;
 
@@ -15,6 +18,39 @@ class Database {
 
     static getAuthEmail() {
         return firebase.auth().currentUser.email;
+    }
+
+    // 유저 리스트 가져오기
+    static getAuthUserList(callback) {
+
+        try {
+            console.log("call getAuthUserList");
+
+            firebase.database().ref().child(rootUserData).once('value', (snapshot) => {
+
+                var userLists = [];
+
+                snapshot.forEach((child) => {
+
+                    var users = userLists.slice()
+                    users.push({
+                        userID: child.key,
+                        userEmail: child.val().userEmail,
+                        userGroup: child.val().userGroup,
+                        userName: child.val().userName,
+                        isChecked: false
+                    })
+
+                    userLists = users;
+                });
+
+                callback(userLists);
+            })
+
+            console.log("end getAuthUserList");
+        } catch(error) {
+            console.log("error getAuthUserList: " + error.toString());
+        }
     }
 
     // 층목록 가져오기
@@ -465,17 +501,102 @@ class Database {
         }
     }
 
+    // 반복 예약시 그룹핑, 예약 인덱스로 사용
     static setGroupData(groupID, selectDateAry) {
         try {
 
             let groupWritePath = `${rootGroupData}${groupID}`;
 
-            // firebase.database().ref(bookWritePath).push({
             firebase.database().ref(groupWritePath).set({
                 selectedDates: selectDateAry
             });
         } catch (error) {
             console.log('setGroupData error: ' + error.toString())
+        }
+    }
+
+
+    // 예약시 해당 userID 별로 회의시간 path 기록하기(계속 추가됨)
+    static setUserBookingData(chidPath, memberAry) {
+        try {
+            memberAry.map( (member)=> {
+                let uid = member.userID;
+                let userDataPath = `${rootUserData}${uid}`;
+
+                firebase.database().ref(userDataPath).push.setValue(chidPath);
+            });
+
+        } catch (error) {
+            console.log('setUserBookingData error: ' + error.toString())
+        }
+    }
+
+    // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
+    static getMyBooking(callback) {
+        try {
+            let myUid = Database.getAuthUid();
+            let today = CommonUtil.getTodayYYMMDD();
+
+            let userDataPath = `${rootUserData}${myUid}`;
+
+            var userDataRef = firebase.database().ref(userDataPath);
+
+            // 오늘 날짜 이상의 데이터만 key 기준으로 정렬해서 데이터 가져옴
+            userDataRef.orderByKey().startAt(today).on("child_added", function(snapshot) {
+
+                console.log("getMyBooking snapshot: " + Object.values(snapshot))
+                console.log("getMyBooking snapshot.key: " + snapshot.key)
+
+            });
+
+        } catch (error) {
+            console.log('getMyBooking error: ' + error.toString())
+        }
+    }
+
+
+    // 예약시 Notification을 보낼수 있게 예약별로 멤버 그룹핑
+    static setNotificationGroup(bookingPath, owner, memberAry) {
+        try {
+            let myUid = Database.getAuthUid();
+            let userDataPath = `${rootNotificationGroup}${bookingPath}`;
+
+            // firebase.database().ref(bookWritePath).push({
+            firebase.database().ref(groupWritePath).set({
+                owner: owner,
+                members: memberAry
+            });
+        } catch (error) {
+            console.log('setUserBookingData error: ' + error.toString())
+        }
+    }
+
+    // Notification 보낼 멤버 가져오기
+    static getNotificationGroup(bookingPath, callback) {
+        try {
+            let notificiationGroupPath = `${rootNotificationGroup}${bookingPath}`;
+
+            firebase.database().ref().child(notificiationGroupPath).once("value", (snapshot) => {
+
+                console.log('getUserBookingData snapshot: ' + Object.values(snapshot));
+                console.log('getUserBookingData snapshot.val: ' + snapshot.val());
+
+                var userData = snapshot.val();
+
+                if(userData) {
+                    var users = [];
+                    users.put(userData.owner);
+                    users.put(userData.members);
+
+                    callback(users);
+                    return;
+                }
+
+                callback(null);
+            });
+        } catch (error) {
+            console.log('getUserBookingData error: ' + error.toString())
+            callback(null);
         }
     }
 }

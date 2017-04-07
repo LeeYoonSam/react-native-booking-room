@@ -37,14 +37,14 @@ var styles = StyleSheet.create({
   },
 
   viewRootContainer: {
-
     alignItems: 'stretch',
-    padding: 10
+    padding: 15
   },
 
   viewContainer: {
     flex: 1,
     alignItems: 'stretch',
+    marginTop: 5,
   },
 
   bookSectionText: {
@@ -86,7 +86,7 @@ var styles = StyleSheet.create({
   iconWithSection: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 5
+      marginBottom: 10
   },
 
   typeContainer: {
@@ -148,6 +148,8 @@ class BookRoom extends Component {
                 expiredDate: selectOriginDate,
                 expiredDateStr: CommonUtil.dateToYYMMDD(selectOriginDate),
                 showProgress: false,
+                userSearchTtile: "참석자 검색",
+                selectedUsers: [],
             };
 
         } else {
@@ -158,6 +160,8 @@ class BookRoom extends Component {
                 expiredDate: selectOriginDate,
                 expiredDateStr: CommonUtil.dateToYYMMDD(selectOriginDate),
                 showProgress: false,
+                userSearchTtile: "참석자 검색",
+                selectedUsers: [],
             };
         }
 
@@ -171,6 +175,7 @@ class BookRoom extends Component {
         this.bookingFBdb = this.bookingFBdb.bind(this);
         this.checkValidUser = this.checkValidUser.bind(this);
         this.getRepeatList = this.getRepeatList.bind(this);
+        this.callbackSelectedUsers = this.callbackSelectedUsers.bind(this);
     }
 
     componentDidMount() {
@@ -622,6 +627,24 @@ class BookRoom extends Component {
                             <Text style={[styles.bookPointText, CommonStyle.textStyleMainColor]}>{`${this.props.selectDate} / ${this.props.selectTime} ~ ${this.props.selectTime + 1}시`}</Text>
                         </View>
 
+
+                        <View style={styles.separatedLine} />
+                        <View style={styles.viewContainer}>
+                            <View style={styles.iconWithSection}>
+                                <Icon name='users' size={iconSize} color={iconColor} />
+                                <Text style={styles.bookSectionText}>회의 참석자</Text>
+                            </View>
+                            <TouchableWithoutFeedback onPress={() => {this.moveUserList(this.state.selectedUsers)}}>
+                                <View style={{backgroundColor: '#50829b', alignItems: 'stretch', borderRadius: 4, margin: 10, padding: 10}}>
+                                    <Text
+                                        style={{fontSize: 16, fontWeight: "bold", color: 'azure'}}>
+                                        {this.state.userSearchTtile}
+                                    </Text>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </View>
+
+
                         <View style={styles.separatedLine} />
 
                         <View style={styles.viewContainer}>
@@ -695,6 +718,7 @@ class BookRoom extends Component {
                                     })
                                 }
                             </View>
+
                         </View>
 
                     </View>
@@ -712,6 +736,36 @@ class BookRoom extends Component {
 
             </View>
       )
+    }
+
+    moveUserList(_selectedUsers) {
+        // 팝업 띄우기
+        this.props.navigator.push({
+            name: 'UserSearch',
+            selectedUsers: _selectedUsers,
+            callback: this.callbackSelectedUsers,
+        });
+    }
+
+    callbackSelectedUsers(_selectedUsers) {
+        if(_selectedUsers.length === 0) {
+            this.setState({
+                selectedUsers: [],
+                userSearchTtile: "참석자 검색",
+            });
+        }
+        else if(_selectedUsers.length === 1) {
+            this.setState({
+                selectedUsers: _selectedUsers,
+                userSearchTtile: `${_selectedUsers[0].userName}`,
+            });
+        } else {
+            this.setState({
+                selectedUsers: _selectedUsers,
+                userSearchTtile: `${_selectedUsers[0].userName} 외 ${_selectedUsers.length -1}명`,
+            });
+        }
+
     }
 
 }

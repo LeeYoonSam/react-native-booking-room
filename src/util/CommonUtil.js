@@ -46,6 +46,23 @@ module.exports = {
         return Math.ceil(timeDiff / (1000 * 3600 * 24));
     },
 
+    getTodayYYMMDD() {
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth()+1; //January is 0!
+        var yyyy = today.getFullYear();
+
+        if(dd < 10) {
+            dd = '0' + dd
+        }
+
+        if(mm<10) {
+            mm = '0' + mm
+        }
+
+        return `${yyyy}${mm}${dd}`;
+    },
+
     getDayOfWeek(date) {
         var week = new Array('일', '월', '화', '수', '목', '금', '토');
         return week[date.getDay()];

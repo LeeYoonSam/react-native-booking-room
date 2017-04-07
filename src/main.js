@@ -14,6 +14,7 @@ var LoginForFirebase = require('./components/LoginForFirebase');
 var MainFloor = require('./components/MainFloor');
 var MeetingRoomMain = require('./components/MeetingRoomMain');
 var BookRoom = require('./components/BookRoom');
+var UserSearch = require('./components/UserSearch');
 
 // 스와이프백 제스쳐로 뒤로 가기 막기
 const NoBackSwipe = {
@@ -113,6 +114,14 @@ module.exports = backAndroid(React.createClass({
                     updateType={route.updateType}
                     />);
                     break;
+
+            case "UserSearch":
+                return (
+                    <UserSearch
+                        navigator={navigator}
+                        selectedUsers={route.selectedUsers}
+                        callback={route.callback} />);
+                break;
         }
     },
 

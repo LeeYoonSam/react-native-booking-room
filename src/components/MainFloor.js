@@ -112,6 +112,7 @@ class MainFloor extends Component {
     }
 
     async componentDidMount() {
+
         try {
             fbDB.listenFloorList((floorLists) => {
                 console.log("floorLists: " + floorLists);
