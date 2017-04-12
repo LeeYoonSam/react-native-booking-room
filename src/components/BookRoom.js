@@ -150,6 +150,7 @@ class BookRoom extends Component {
                 showProgress: false,
                 userSearchTtile: "참석자 검색",
                 selectedUsers: [],
+                memberObj: {},
             };
 
         } else {
@@ -162,6 +163,7 @@ class BookRoom extends Component {
                 showProgress: false,
                 userSearchTtile: "참석자 검색",
                 selectedUsers: [],
+                memberObj: {},
             };
         }
 
@@ -179,6 +181,8 @@ class BookRoom extends Component {
     }
 
     componentDidMount() {
+        this.state.memberObj.owner = fbDB.getAuthUid();
+
         if(this.props.isUpdate) {
             // 전체 수정일 경우만 리스트를 가져옴
             if(this.props.updateType === CommonConst.BOOKING_TYPE.type_update_all) {
@@ -535,8 +539,10 @@ class BookRoom extends Component {
                 repeatType = CommonConst.REPEAT_TYPE[0];
             }
 
+            console.log("bookingFBdb memberObj: " + Object.values(this.state.memberObj));
+
             // static listenUpdateBook(bookingType, selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, callback)
-            fbDB.listenUpdateBook(this.props.updateType, selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, repeatType, this.state.bookType, this.state.bookMemo, this.props.selectData.groupID, (isSuccess) => {
+            fbDB.listenUpdateBook(this.props.updateType, selectDateAry, this.state.memberObj, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, repeatType, this.state.bookType, this.state.bookMemo, this.props.selectData.groupID, (isSuccess) => {
                 // 예약 완료
                 if(isSuccess) {
                     Alert.alert('예약이 수정 되었습니다.');
@@ -552,7 +558,7 @@ class BookRoom extends Component {
         // 예약 처리
         else {
             // listenWriteBook(yymmdd, floor, roomID, beginTime, endTime, bookType, bookMemo, callback)
-            fbDB.listenWriteBook(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
+            fbDB.listenWriteBook(selectDateAry, this.state.memberObj, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
                 // 예약 완료
                 if(isSuccess) {
                     Alert.alert('예약이 완료 되었습니다.');
@@ -634,7 +640,7 @@ class BookRoom extends Component {
                                 <Icon name='users' size={iconSize} color={iconColor} />
                                 <Text style={styles.bookSectionText}>회의 참석자</Text>
                             </View>
-                            <TouchableWithoutFeedback onPress={() => {this.moveUserList(this.state.selectedUsers)}}>
+                            <TouchableWithoutFeedback onPress={() => {this.moveUserList(this.state.memberObj.members)}}>
                                 <View style={{backgroundColor: '#50829b', alignItems: 'stretch', borderRadius: 4, margin: 10, padding: 10}}>
                                     <Text
                                         style={{fontSize: 16, fontWeight: "bold", color: 'azure'}}>
@@ -766,6 +772,14 @@ class BookRoom extends Component {
             });
         }
 
+        this.state.memberObj.members = [];
+        
+        _selectedUsers.map((user)=> {
+            this.state.memberObj.members.push(user.userID);
+        });
+
+
+        console.log("after selectedUsers memberObj: " + Object.values(this.state.memberObj));
     }
 
 }

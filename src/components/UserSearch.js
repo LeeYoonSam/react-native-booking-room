@@ -150,19 +150,20 @@ class UserSearch extends Component {
             }, () => {
                 // 파이어베이스 디비에서 user 정보를 가져옴
                 fbDB.getAuthUserList((userLists) => {
+                    if(this.props.selectedUsers !== undefined) {
+                        if(this.props.selectedUsers.length > 0) {
+                            userLists.map((userInfo) => {
+                                for(var i = 0; i < this.props.selectedUsers.length; i ++) {
+                                    // 선택된 유저의 UI를 복구하기 위해서 상태 변경
+                                    if(userInfo.userID === this.props.selectedUsers[i].userID) {
+                                        userInfo.isChecked = true;
 
-                    if(this.props.selectedUsers.length > 0) {
-                        userLists.map((userInfo) => {
-                            for(var i = 0; i < this.props.selectedUsers.length; i ++) {
-                                // 선택된 유저의 UI를 복구하기 위해서 상태 변경
-                                if(userInfo.userID === this.props.selectedUsers[i].userID) {
-                                    userInfo.isChecked = true;
-
-                                    // 선택된 유저 리스트에 추가
-                                    this.state.selectedUsers.push(userInfo);
+                                        // 선택된 유저 리스트에 추가
+                                        this.state.selectedUsers.push(userInfo);
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
 
                     // 가져온 유저정보 저장 및 listview 갱신, 로딩 정지

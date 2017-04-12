@@ -162,11 +162,9 @@ class MeetingRoomMain extends Component {
     }
 
 
-    // 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) BookData/yymmdd/floor/roomID/beginTime
+    // 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) yymmdd/floor/roomID/beginTime
     // 추후에 '일괄 수정'시 this.state.repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
     getRepeatList(rowData, isRemoveAll) {
-
-        var repeatCount = 0;
 
         this.setState({
             showProgress: true
@@ -181,18 +179,23 @@ class MeetingRoomMain extends Component {
                     console.log("getRepeatList fbDB callback repeatList: " + Object.values(repeatList));
 
                     var tmpDates = [];
+                    var tmpUsers = [];
 
-                    console.log("repeatCount: " + repeatCount);
-                    repeatCount ++;
+                    repeatList.selectedDates.map((repeatDate) => {
+                        console.log("getRepeatList repeat.selectedDate: " + repeatDate.selectDate);
 
-                    repeatList.map((repeat) => {
-                        console.log("getRepeatList repeat.selectedDate: " + repeat.selectedDate);
+                        tmpDates.push(`${repeatDate.selectDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+                    });
 
-                        tmpDates.push(`BookData/${repeat.selectedDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+                    repeatList.selectedUsers.map((repeatUser) => {
+                        console.log("getRepeatList repeat.selectedDate: " + repeatUser.selectUser);
+
+                        tmpUsers.push(`${repeatUser.selectUser}`);
                     });
 
                     this.setState({
                         repeatDates: tmpDates,
+                        repeatUsers: tmpUsers,
                     }, () => {
                         console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
                         this.fbDeleteBooking(rowData.groupID, isRemoveAll);
@@ -204,10 +207,14 @@ class MeetingRoomMain extends Component {
                 console.log("call getRepeatList 개별 삭제" );
 
                 var tmpDates = [];
-                tmpDates.push(`BookData/${this.state.dateStr}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+                tmpDates.push(`${this.state.dateStr}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+
+                var tmpUsers = [];
+                tmpUsers.push(fbDB.getAuthUid);
 
                 this.setState({
                     repeatDates: tmpDates,
+                    repeatUsers: tmpUsers,
                 }, () => {
                     console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
                     this.fbDeleteBooking(rowData.groupID, isRemoveAll);
@@ -453,9 +460,7 @@ class MeetingRoomMain extends Component {
             showProgress: true,
         }, () => {
             // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
-            // checkAndDeleteMatchUser(seletedDates, isRemoveAll, callback)
-
-            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, isRemoveAll, (isSuccess) => {
+            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, this.state.repeatUsers, groupID, isRemoveAll, (isSuccess) => {
 
                 console.log("fbDeleteBooking isSuccess: " + isSuccess);
 
