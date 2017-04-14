@@ -11,9 +11,10 @@ import {
     StyleSheet
 } from 'react-native';
 
-import { hardwareBackPress, exitApp } from 'react-native-back-android';
+import { hardwareBackPress } from 'react-native-back-android';
 
-import StatusBar from './StatusBar';
+import NaviBar from './NaviBar';
+
 import ScrollableTabView, { ScrollableTabBar, } from 'react-native-scrollable-tab-view';
 import fbDB from '../firebase/Database';
 
@@ -85,11 +86,6 @@ var styles = StyleSheet.create({
 });
 
 class MainFloor extends Component {
-    handleHardwareBackPress() {
-        console.log('* Scene1 back press');
-        exitApp();
-        return true;
-    }
 
     constructor(props) {
         super(props);
@@ -108,7 +104,7 @@ class MainFloor extends Component {
         this.getRoomList = this.getRoomList.bind(this);
         this.renderRoom = this.renderRoom.bind(this);
         this.renderMainFloor = this.renderMainFloor.bind(this);
-
+        this.onBackPress = this.onBackPress.bind(this);
     }
 
     async componentDidMount() {
@@ -127,6 +123,10 @@ class MainFloor extends Component {
         } catch (error) {
             console.log(error);
         }
+    }
+
+    onBackPress() {
+        this.props.navigator.pop();
     }
 
     async getRoomList(currentFloor) {
@@ -333,7 +333,9 @@ class MainFloor extends Component {
 
         return (
             <View style={styles.container} >
-                <StatusBar title={SecretText.APP_TITLE} />
+                <NaviBar
+                    naviTitle={SecretText.MEETINGROOM_LIST}
+                    onBackPress={this.onBackPress} />
 
                 <Loading
                     animating={this.state.showProgress}/>

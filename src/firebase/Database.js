@@ -1,6 +1,7 @@
 import * as firebase from "firebase";
 import CommonConst from "../consts/CommonConst";
 import CommonUtil from "../util/CommonUtil";
+import MyBookingModel from "../models/MyBookingModel";
 
 let rootMeetingRoom = "MeetingRoom/";
 let rootUserData = "UserData/";
@@ -99,6 +100,23 @@ class Database {
             });
 
             callback(roomLists);
+        });
+    }
+
+    // 회의실 정보 가져오기
+    static listenMeetingRoomInfo(floor, roomID, callback) {
+
+        let roomInfoPath = `${rootMeetingRoom}${floor}/${roomID}`;
+        console.log("listenMeetingRoomInfo roomInfoPath: " + roomInfoPath);
+
+        firebase.database().ref().child(roomInfoPath).once('value', (snapshot) => {
+
+            var roomInfo = {};
+
+            roomInfo.img = snapshot.val().img;
+            roomInfo.name = snapshot.val().name;
+
+            callback(roomInfo);
         });
     }
 
@@ -696,26 +714,50 @@ class Database {
 
             var userDataRef = firebase.database().ref(userDataPath);
 
-            // userDataRef.on("value", function(snapshot) {
-            //     console.log("getMyBooking snapshot: " + Object.values(snapshot))
-            //     console.log("getMyBooking snapshot.key: " + snapshot.key)
+            // 내 예약 리스트를 담을 배열
+            var myBooks = [];
+
+            // userDataRef.orderByKey().startAt(today).once("child_added", function(snapshot) {
+            //
+            //     // BookingModel을 만들어서 재활용
+            //     var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
+            //     tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
+            //
+            //     myBooks.push(tmpBookingModel);
+            //     console.log("getMyBooking myBooks: " + JSON.stringify(myBooks));
+            //
+            //     callback(myBooks);
             // });
 
-
-            // Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed)
+            // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
             // 오늘 날짜 이상의 데이터만 key 기준으로 정렬해서 데이터 가져옴
             userDataRef.orderByKey().startAt(today).on("child_added", function(snapshot) {
-                console.log("getMyBooking orderByKey snapshot: " + Object.values(snapshot))
-                console.log("getMyBooking orderByKey snapshot.key: " + snapshot.key)
+
+                // BookingModel을 만들어서 재활용
+                var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
+                tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
+
+                myBooks.push(tmpBookingModel);
+                console.log("getMyBooking myBooks: " + JSON.stringify(myBooks));
+
+                callback(myBooks);
             });
 
             userDataRef.orderByKey().startAt(today).on("child_removed", function(snapshot) {
-                console.log("getMyBooking orderByKey snapshot: " + Object.values(snapshot))
-                console.log("getMyBooking orderByKey snapshot.key: " + snapshot.key)
+                // BookingModel을 만들어서 재활용
+                var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
+                tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
+
+                myBooks.push(tmpBookingModel);
+                console.log("getMyBooking myBooks: " + JSON.stringify(myBooks));
+
+                callback(myBooks);
             });
+            // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
 
         } catch (error) {
             console.log('getMyBooking error: ' + error.toString())
+            callback(null);
         }
     }
 

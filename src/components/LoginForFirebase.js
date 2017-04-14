@@ -53,14 +53,11 @@ class Login extends Component {
         try {
             await firebase.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
                 .then((userData) => {
-                    console.log("loginSuccess userData: " + Object.values(userData));
-
                     this.setState({
                         showProgress: false,
                     }, () => {
                         this.props.navigator.push({
-                            // name: 'MeetingRoomMain'
-                            name: 'MainFloor'
+                            name: 'MyBooking'
                         });
                     });
                 })
@@ -138,7 +135,7 @@ class Login extends Component {
             var lengthCheck = this.state.email.length;
             var isEmpty = lengthCheck > 0 ? false : true;
             if(isEmpty) {
-                Alert.alert('please input your eamil address');
+                Alert.alert('이메일을 입력해 주세요.');
 
                 this.dismissProgress();
 
@@ -148,7 +145,7 @@ class Login extends Component {
             lengthCheck = this.state.password.length;
             isEmpty = lengthCheck > 0 ? false : true;
             if(isEmpty) {
-                Alert.alert('please input your password');
+                Alert.alert('비밀번호를 입력해 주세요.');
 
                 this.dismissProgress();
 

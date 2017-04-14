@@ -1,6 +1,34 @@
 'use strict';
 
+import React, { Component } from 'react';
+import {
+    View,
+} from 'react-native';
+
 module.exports = {
+
+    cloneObject(obj) {
+        if (obj === null || typeof(obj) !== 'object')
+        return obj;
+
+        var copy = obj.constructor();
+
+        for (var attr in obj) {
+            if (obj.hasOwnProperty(attr)) {
+                copy[attr] = this.cloneObject(obj[attr]);
+            }
+        }
+        return copy;
+    },
+
+    removeDuplicateAry(arr) {
+        let hashTable = {};
+        return arr.filter((el) => {
+            let key = JSON.stringify(el);
+            let alreadyExist = !!hashTable[key];
+            return (alreadyExist ? false : hashTable[key] = true);
+        });
+    },
 
     // 1자리 숫자일때 01, 001 이런 형태로 만들어주는 함수 'width:자리수를 의미' - ex) pad(1, 2) => 01 , pad(1, 3) => 001
     pad(n, width) {
@@ -68,4 +96,15 @@ module.exports = {
         return week[date.getDay()];
     },
 
+    renderSeparator(sectionID, rowID, adjacentRowHighlighted) {
+        return (
+            <View
+                key={`${sectionID}-${rowID}`}
+                    style={{
+                        height: 1,
+                        backgroundColor: '#DDD',
+                    }}
+                />
+        );
+    }
 };

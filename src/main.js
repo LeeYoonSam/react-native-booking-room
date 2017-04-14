@@ -10,6 +10,7 @@ import Firebase from "./firebase/Firebase";
 import * as firebase from "firebase";
 
 // var Login = require('./components/login');
+var MyBooking = require('./components/MyBooking');
 var LoginForFirebase = require('./components/LoginForFirebase');
 var MainFloor = require('./components/MainFloor');
 var MeetingRoomMain = require('./components/MeetingRoomMain');
@@ -42,31 +43,21 @@ module.exports = backAndroid(React.createClass({
     // 로그인 판단해서 어떤 뷰를 보여줄지 결정해서 state 업데이트
     getInitialView() {
 
-        firebase.auth().onAuthStateChanged((user) => {
-
-            console.log("user: " + user);
-            let initialView = user ? "MainFloor" : "LoginForFirebase";
-            console.log("initialView: " + initialView);
-
-            this.setState({
-                userLoaded: true,
-                initialView: initialView
-            })
-
-            console.log("initialView: " + this.state.initialView);
-        });
-
+        // 실제 로그인 화면 부터 시작
         this.setState({
             userLoaded: true,
-            initialView: "LoginForFirebase"
+            // 더미 테스트
+            // initialView: "MyBooking",
+            
+            initialView: "LoginForFirebase",
         })
     },
 
-    // 화면 설정 - MainFloor에서는 뒤로 못가게 처리 (제스쳐 가로채기)
+    // 화면 설정 - MyBooking 에서는 뒤로 못가게 처리 (제스쳐 가로채기)
     _configureScene: function(route) {
 
         switch (route.name) {
-            case 'MainFloor':
+            case 'MyBooking':
             return NoBackSwipe
             break;
 
@@ -83,6 +74,10 @@ module.exports = backAndroid(React.createClass({
         console.log("renderScene: " + route.name + " navigator: " + navigator);
 
         switch (route.name) {
+            case "MyBooking":
+            return (<MyBooking navigator={navigator} />);
+                break;
+
             case "MainFloor":
             return (<MainFloor navigator={navigator} />);
             break;
