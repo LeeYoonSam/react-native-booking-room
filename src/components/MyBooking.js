@@ -118,7 +118,7 @@ class MyBooking extends Component {
         this.state = {
             ds : new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}),
             bookingDatas: [],
-            showProgress: true,
+            showProgress: false,
         };
 
         this.getBookingList = this.getBookingList.bind(this);
@@ -211,6 +211,10 @@ class MyBooking extends Component {
                     });
                 });
             } catch(error) {
+                this.setState({
+                    showProgress: false,
+                });
+
                 console.log(error.toString());
             }
         });

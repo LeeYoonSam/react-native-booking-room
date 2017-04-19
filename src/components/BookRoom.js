@@ -101,6 +101,14 @@ var styles = StyleSheet.create({
       borderWidth: 2,
   },
 
+  selectUserContainer: {
+      flex: 1,
+      flexWrap: 'wrap',
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
+      height: 40,
+  },
+
 });
 
 var iconColor = 'lightsteelblue';
@@ -178,6 +186,7 @@ class BookRoom extends Component {
         this.checkValidUser = this.checkValidUser.bind(this);
         this.getRepeatList = this.getRepeatList.bind(this);
         this.callbackSelectedUsers = this.callbackSelectedUsers.bind(this);
+        this.setSelectedUserUI = this.setSelectedUserUI.bind(this);
     }
 
     componentDidMount() {
@@ -592,7 +601,7 @@ class BookRoom extends Component {
                     onMonthChange={this.onMonthChange}
                     minDate={this.props.selectOriginDate}
                     screenWidth={150}
-                    selectedDayColor={'#5cb2ce'} />
+                    selectedDayColor={'lightcoral'} />
             </View>;
         }
 
@@ -648,6 +657,8 @@ class BookRoom extends Component {
                                     </Text>
                                 </View>
                             </TouchableWithoutFeedback>
+
+                            {this.setSelectedUserUI()}
                         </View>
 
 
@@ -744,11 +755,11 @@ class BookRoom extends Component {
       )
     }
 
-    moveUserList(_selectedUsers) {
+    moveUserList(_selectedUserIDs) {
         // 팝업 띄우기
         this.props.navigator.push({
             name: 'UserSearch',
-            selectedUsers: _selectedUsers,
+            selectedUsers: _selectedUserIDs,
             callback: this.callbackSelectedUsers,
         });
     }
@@ -772,14 +783,43 @@ class BookRoom extends Component {
             });
         }
 
+        // userID만 담는 객체
         this.state.memberObj.members = [];
-        
+
         _selectedUsers.map((user)=> {
             this.state.memberObj.members.push(user.userID);
+        }, () => {
+            this.setSelectedUserUI();
         });
 
-
         console.log("after selectedUsers memberObj: " + Object.values(this.state.memberObj));
+    }
+
+    // 유저 선택 후 UI 세팅
+    setSelectedUserUI() {
+        // 유저 선택하고 유저이름 보여주는 부분에 라인과 간격조절을 위해 marginBottom 조정
+        var userContainerBottomMargin = (this.state.selectedUsers.length / 5) * 30;
+        console.log("userContainerBottomMargin: " + userContainerBottomMargin + " this.state.selectedUsers: " + this.state.selectedUsers);
+        return (
+            <View style={[styles.selectUserContainer, {marginBottom: userContainerBottomMargin}]}>
+                {
+                    this.state.selectedUsers.map((user)=> {
+                        console.log("setSelectedUserUI user: " + Object.values(user))
+                        return (
+                            <View style={{marginRight: 5}}
+                                key={`users-${user.userID}`}>
+                                <Text style={{fontSize: 16, color: 'black', padding:5, borderColor: 'cornflowerblue',
+                                    borderWidth: 1,
+                                    borderRadius: 4,
+                                    backgroundColor: '#ffffff'}}>
+                                    {user.userName}
+                                </Text>
+                            </View>
+                        )
+                    })
+                }
+            </View>
+        )
     }
 
 }

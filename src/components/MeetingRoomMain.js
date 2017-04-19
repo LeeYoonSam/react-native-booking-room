@@ -174,28 +174,10 @@ class MeetingRoomMain extends Component {
             if(isRemoveAll) {
                 console.log("call getRepeatList 전체 삭제" );
 
-                fbDB.searchGroupId(rowData.groupID, (repeatList) => {
-
-                    console.log("getRepeatList fbDB callback repeatList: " + Object.values(repeatList));
-
-                    var tmpDates = [];
-                    var tmpUsers = [];
-
-                    repeatList.selectedDates.map((repeatDate) => {
-                        console.log("getRepeatList repeat.selectedDate: " + repeatDate.selectDate);
-
-                        tmpDates.push(`${repeatDate.selectDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
-                    });
-
-                    repeatList.selectedUsers.map((repeatUser) => {
-                        console.log("getRepeatList repeat.selectedDate: " + repeatUser.selectUser);
-
-                        tmpUsers.push(`${repeatUser.selectUser}`);
-                    });
-
+                fbDB.searchGroupId(rowData.groupID, (groupData) => {
                     this.setState({
-                        repeatDates: tmpDates,
-                        repeatUsers: tmpUsers,
+                        repeatDates: groupData.selectedTimes,
+                        repeatUsers: groupData.selectedUsers,
                     }, () => {
                         console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
                         this.fbDeleteBooking(rowData.groupID, isRemoveAll);
@@ -206,18 +188,17 @@ class MeetingRoomMain extends Component {
             else {
                 console.log("call getRepeatList 개별 삭제" );
 
-                var tmpDates = [];
-                tmpDates.push(`${this.state.dateStr}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`);
+                fbDB.searchGroupId(rowData.groupID, (groupData) => {
 
-                var tmpUsers = [];
-                tmpUsers.push(fbDB.getAuthUid);
+                    var tmpDates = {"0": `${this.state.dateStr}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${rowData.beginTime}`};
 
-                this.setState({
-                    repeatDates: tmpDates,
-                    repeatUsers: tmpUsers,
-                }, () => {
-                    console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
-                    this.fbDeleteBooking(rowData.groupID, isRemoveAll);
+                    this.setState({
+                        repeatDates: tmpDates,
+                        repeatUsers: groupData.selectedUsers,
+                    }, () => {
+                        console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
+                        this.fbDeleteBooking(rowData.groupID, isRemoveAll);
+                    });
                 });
             }
         })
@@ -459,8 +440,9 @@ class MeetingRoomMain extends Component {
         this.setState({
             showProgress: true,
         }, () => {
+
             // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
-            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, this.state.repeatUsers, groupID, isRemoveAll, (isSuccess) => {
+            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, this.state.repeatUsers, isRemoveAll, (isSuccess) => {
 
                 console.log("fbDeleteBooking isSuccess: " + isSuccess);
 

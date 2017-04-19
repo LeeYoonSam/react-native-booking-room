@@ -11,8 +11,6 @@ let rootGroupData = "GroupData/";
 let rootUserInfo = "UserInfo/";
 let rootNotificationGroup = "NotificationGroup/";
 
-var count = 0;
-
 class Database {
 
     static getAuthUid() {
@@ -111,6 +109,8 @@ class Database {
 
         firebase.database().ref().child(roomInfoPath).once('value', (snapshot) => {
 
+            console.log("listenMeetingRoomInfo snapshot: " + Object.values(snapshot));
+
             var roomInfo = {};
 
             roomInfo.img = snapshot.val().img;
@@ -181,33 +181,40 @@ class Database {
     // 해당 예약이 요청한 유저와 일치하는지 확인 후 삭제 처리
     static checkAndDeleteMatchUser(seletedDates, seletedUsers, isRemoveAll, callback) {
         try {
-            console.log("count: " + count);
-            count ++;
             /*
             ex) BookData/20170308/12/A/9/userID =>
             */
             var isSuccess = true;
 
-            console.log("checkAndDeleteMatchUser seletedDates: " + Object.values(seletedDates) + "isRemoveAll: " + isRemoveAll);
+            console.log("checkAndDeleteMatchUser seletedDates: " + seletedDates + " isRemoveAll: " + isRemoveAll ? "true" : "false");
 
             // userData 그룹과 notification 그룹 데이터 삭제하기 위한 경로 배열 선언
             var childPathAry = [];
             var memberAry = [];
 
+            console.log(Object.keys(seletedDates));
             // 1. 반복 예약 전체 삭제
-            seletedDates.map((listPath) => {
+
+            for(var key in seletedDates) {
+                var listPath = seletedDates[key];
 
                 childPathAry.push(listPath);
 
-                let bookListCheckPath = `${rootBookData}${listPath}/userID`;
+                let bookListCheckPath = `${rootBookData}${listPath}`;
                 console.log("checkAndDeleteMatchUser bookListBasePath: " + listPath);
 
-                firebase.database().ref().child(bookListCheckPath).once("value", (snapshot) => {
+                firebase.database().ref(bookListCheckPath).child("memberInfo/owner").once("value", (snapshot) => {
                     var userID = snapshot.val();
                     if (userID === firebase.auth().currentUser.uid) {
                         // 삭제 처리
-                        firebase.database().ref().child(listPath).remove();
-                        console.log("call remove");
+                        firebase.database().ref().child(bookListCheckPath).once("value", (removeSnapshot) => {
+                            console.log("checkAndDeleteMatchUser removeSnapshot: " + removeSnapshot);
+
+                            if(removeSnapshot.exists()) {
+                                firebase.database().ref().child(bookListCheckPath).remove();
+                                console.log("call remove");
+                            }
+                        });
                     } else {
                         console.log("call remove failed");
                         isSuccess = false;
@@ -216,23 +223,18 @@ class Database {
                         return;
                     }
                 });
-            });
-
-            seletedUsers.map((userID)=> {
-                memberAry.push(userID);
-            });
+            }
 
             // Todo 2. 유저별로 예약 삭제 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
-            Database.setUserBookingData(childPathAry, memberAry, true);
+            Database.setUserBookingData(childPathAry, seletedUsers, true);
 
             // Todo 3. NotificationGroup 삭제 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
-            Database.setNotificationGroup(childPathAry, memberAry, true);
+            Database.setNotificationGroup(childPathAry, seletedUsers, true);
 
             callback(isSuccess);
 
         } catch(error) {
             console.log("checkAndDeleteMatchUser error: " + error)
-            callback(false);
         }
 
     }
@@ -272,11 +274,37 @@ class Database {
 
                     if(child.val() === yymmdd)
                     {
+                        if(snapshot.numChildren() < 2) {
+                            this.removeAllBookingGroup(groupID);
+                        }
+
                         // 해당하는 아이디 다이렉트로 삭제
                         child.ref.remove();
                         console.log("removeOneBookingGroup success");
+                    }
+                });
+            });
 
-                        return;
+            let selectedTimesPath = `${rootGroupData}${groupID}/selectedTimes`;
+            console.log("removeBookingGroup selectedTimesPath: " + selectedTimesPath);
+
+            firebase.database().ref().child(selectedTimesPath).once("value", (snapshot) => {
+
+                snapshot.forEach((child) => {
+                    console.log("removeBookingGroup child: " + Object.values(child) + " child.val(): " + child.val() + " child.key: " + child.key);
+
+                    var times = child.val();
+                    var tmpTime = times.substring(0,8);
+
+                    if(tmpTime === yymmdd)
+                    {
+                        if(snapshot.numChildren() < 2) {
+                            this.removeAllBookingGroup(groupID);
+                        }
+
+                        // 해당하는 아이디 다이렉트로 삭제
+                        child.ref.remove();
+                        console.log("removeOneBookingGroup success");
                     }
                 });
             });
@@ -351,7 +379,8 @@ class Database {
                         modifyDate: new Date(),
                         bookMemo: bookMemo,
                         repeatType: repeatType,
-                        bookType: bookType
+                        bookType: bookType,
+                        memberInfo: memberObj
                     });
                 }
                 else {
@@ -364,7 +393,8 @@ class Database {
                         modifyDate: new Date(),
                         bookMemo: bookMemo,
                         repeatType: repeatType,
-                        bookType: bookType
+                        bookType: bookType,
+                        memberInfo: memberObj
                     });
                 }
 
@@ -539,112 +569,12 @@ class Database {
 
     static searchGroupId(groupID, callback) {
         try {
-
-            console.log("searchGroupId groupID: " + groupID)
-
             let groupDataPath = `${rootGroupData}${groupID}`;
 
             firebase.database().ref().child(groupDataPath).once('value', function(snapshot) {
-
-                console.log("searchGroupId snapshot: " + Object.values(snapshot));
-
-                var groupLists = {};
-
-                if(snapshot === null) {
-                    console.log("searchGroupId call snapshot undefined");
-                    callback(groupLists);
-                    return;
-                }
-
-                snapshot.ref.child("selectedDates").once('value', function(dates) {
-                    console.log("call snapshot.ref.selectedDates dates: " + dates);
-
-                    var dateLists = [];
-
-                    dates.forEach((child) => {
-                        console.log("searchGroupId /selectedDates child: " + Object.values(child));
-
-                        var selectedDates = dateLists.slice()
-                        selectedDates.push({selectDate: child.val()});
-
-                        dateLists = selectedDates;
-                    });
-
-                    groupLists.dateLists = dateLists;
-                });
-
-                snapshot.ref.child("selectedUsers").once('value', function(users) {
-                    console.log("call snapshot.ref.selectedUsers users: " + users);
-
-                    var userLists = [];
-
-                    users.ref.child("owner").once('value', function(owner) {
-                        userLists.push({selectUser: owner.val()});
-                    });
-
-                    users.ref.child("members").once('value', function(member) {
-                        member.forEach((child) => {
-                            console.log("searchGroupId /userIDs child: " + Object.values(child));
-
-                            var selectedUsers = userLists.slice()
-                            selectedUsers.push({selectUser: child.val()});
-
-                            userLists = selectedUsers;
-                        });
-
-                        groupLists.userLists = userLists;
-                    });
-                });
-
-                snapshot.ref.child("selectedTimes").once('value', function(times) {
-                    console.log("call snapshot.ref.selectedTimes times: " + times);
-
-                    var timeLists = [];
-
-                    times.forEach((child) => {
-                        console.log("searchGroupId /selectedTimes child: " + Object.values(child));
-
-                        var selectedTimes = timeLists.slice()
-                        selectedTimes.push({selectedTime: child.val()});
-
-                        timeLists = selectedTimes;
-                    });
-
-                    groupLists.timeLists = timeLists;
-                    // groupLists.push(timeLists);
-                });
-
-
-                console.log("searchGroupId groupLists: " + Object.values(groupLists));
-                callback(groupLists);
-
+                callback(JSON.parse(JSON.stringify(snapshot)));
             });
-            // let groupDataPath = `${rootGroupData}${groupID}/selectedDates`;
-            // firebase.database().ref().child(groupDataPath).once('value', function(snapshot) {
-            //
-            //     console.log("searchGroupId snapshot: " + Object.values(snapshot));
-            //
-            //     var groupLists = [];
-            //
-            //     if(snapshot === null) {
-            //         console.log("searchGroupId call snapshot undefined");
-            //         callback(groupLists);
-            //         return;
-            //     }
-            //
-            //     snapshot.forEach((child) => {
-            //         console.log("searchGroupId child: " + Object.values(child));
-            //
-            //         var selectedDates = groupLists.slice()
-            //         selectedDates.push({selectedDate: child.val()});
-            //
-            //         groupLists = selectedDates;
-            //     });
-            //
-            //     console.log("searchGroupId groupLists: " + Object.values(groupLists));
-            //     callback(groupLists);
-            //
-            // });
+
         } catch (error) {
             console.log("searchGroupId error: " + error);
             callback(undefined);
@@ -672,9 +602,17 @@ class Database {
     // 예약시 해당 userID 별로 회의시간 path 기록하기(계속 추가됨)
     static setUserBookingData(childPathAry, memberObj, isRemove) {
         try {
+
             var memberAry = [];
-            memberAry = memberObj.members.slice();
+
             memberAry.push(memberObj.owner);
+            for(var key in memberObj.members) {
+                memberAry.push(memberObj.members[key]);
+            }
+            console.log("setUserBookingData childPathAry: " + childPathAry);
+            console.log("setUserBookingData memberAry: " + memberAry);
+            // memberAry = memberObj.members.slice();
+            // memberAry.push(memberObj.owner);
 
             // 유저별로 회의정보 추가하기(userID/yymmdd/floor/roomID/beginTime 형태)
             memberAry.map( (uid)=> {
@@ -753,6 +691,8 @@ class Database {
 
                 callback(myBooks);
             });
+
+            callback(myBooks);
             // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
 
         } catch (error) {

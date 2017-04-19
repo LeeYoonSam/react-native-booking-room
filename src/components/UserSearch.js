@@ -155,7 +155,7 @@ class UserSearch extends Component {
                             userLists.map((userInfo) => {
                                 for(var i = 0; i < this.props.selectedUsers.length; i ++) {
                                     // 선택된 유저의 UI를 복구하기 위해서 상태 변경
-                                    if(userInfo.userID === this.props.selectedUsers[i].userID) {
+                                    if(userInfo.userID === this.props.selectedUsers[i]) {
                                         userInfo.isChecked = true;
 
                                         // 선택된 유저 리스트에 추가
