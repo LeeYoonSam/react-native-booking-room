@@ -9,6 +9,7 @@ import {
     Keyboard,
     Dimensions,
     TouchableWithoutFeedback,
+    DeviceEventEmitter,
     StyleSheet
 } from 'react-native';
 
@@ -111,9 +112,32 @@ var styles = StyleSheet.create({
 
 });
 
+// 수정 할때 유저ID에 일치하는 사용자를 가져오기 위해 사용
+Array.prototype._userIDSearch = function(userIDs) {
+
+    var clone =  this.slice();
+    this.length = 0;
+
+    for(var i = 0; i < userIDs.length; i++) {
+
+        var userID = userIDs[i];
+
+        for(var k = 0; k < clone.length; k ++) {
+            // userID가 일치하는 유저 추가
+            if(clone[k].userID === userID) {
+                this.push(clone[k]);
+            }
+        }
+    }
+
+    return this;
+}
+
 var iconColor = 'lightsteelblue';
 var iconSize = 15;
 var selectDateAry = [];
+
+var title = "";
 
 class BookRoom extends Component {
     constructor(props) {
@@ -124,6 +148,11 @@ class BookRoom extends Component {
 
         //  수정일때 데이터 복구 (메모, 회의타입 두가지)
         if(selectData !== undefined) {
+            console.log("call 1");
+            this.setRecoveryUserInfo(selectData);
+
+            title = "수정하기";
+
             var memo = selectData.bookMemo;
             var repeatType = selectData.repeatType;
             var type = selectData.bookType;
@@ -162,6 +191,9 @@ class BookRoom extends Component {
             };
 
         } else {
+
+            title = "예약하기";
+
             this.state = {
                 bookMemo: '',
                 bookType: CommonConst.BOOK_TYPE[0],
@@ -187,6 +219,7 @@ class BookRoom extends Component {
         this.getRepeatList = this.getRepeatList.bind(this);
         this.callbackSelectedUsers = this.callbackSelectedUsers.bind(this);
         this.setSelectedUserUI = this.setSelectedUserUI.bind(this);
+        this.setRecoveryUserInfo = this.setRecoveryUserInfo.bind(this);
     }
 
     componentDidMount() {
@@ -208,6 +241,33 @@ class BookRoom extends Component {
         this.setState({
             showProgress: false
         });
+    }
+
+    // 수정시 사용자 정보 복구
+    setRecoveryUserInfo(selectData) {
+        try {
+            fbDB.getAuthUserList((userLists) => {
+                if(selectData !== undefined) {
+                    // 복구 유저의 Uid를 담는 변수(예약자는 안불러옴)
+                    var memberAry = [];
+                    // memberAry.push(selectData.memberInfo.owner);
+                    for(var key in selectData.memberInfo.members) {
+                        memberAry.push(selectData.memberInfo.members[key]);
+                    }
+
+                    // userID와 매칭하는 유저를 담아서 callbackSelectedUsers 함수에 보내서 state와 파라미터 세팅
+                    userLists._userIDSearch(memberAry);
+                    this.callbackSelectedUsers(userLists);
+                }
+            });
+
+        } catch (error) {
+            console.log("setRecoveryUserInfo error: " + error);
+
+            this.setState({
+                showProgress: false,
+            });
+        }
     }
 
     // 날짜변경 - 해당날짜에 해당하는 DB데이터 조회
@@ -290,7 +350,7 @@ class BookRoom extends Component {
     }
 
     // 파이어베이스 DB에 층과 회의실이 있는지 확인후 존재하면 진행
-    checkFbValidFloor(floor, roomID, ) {
+    checkFbValidFloor(floor, roomID) {
 
         Keyboard.dismiss();
 
@@ -468,14 +528,10 @@ class BookRoom extends Component {
 
         // 일반 예약인지, 수정인지 판단해서 진행
         if(this.props.isUpdate) {
-            console.log('isUpdate');
             this.checkValidUser(selectDateAry);
         } else {
-            console.log('isNotUpdate');
             // 예약 가능한지 DB 체크
             fbDB.isPossibleBooking(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, callback = (isPossible) => {
-
-                console.log('callback isPossible: ' + isPossible);
 
                 // 이미 예약되어 있으면 팝업 처리
                 if(!isPossible) {
@@ -490,32 +546,13 @@ class BookRoom extends Component {
     }
 
     // 해당 예약의 groupID 찾고 yymmdd 리스트를 가지고 있음
-    // `현재 사용하지 않음` ------ 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) BookData/yymmdd/floor/roomID/beginTime
-    // `현재 사용하지 않음` ------ 추후에 '일괄 수정'시 this.state.repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
     getRepeatList(groupID) {
-        if(groupID ===  undefined) {
-
-            Alert.alert('반복 예약이 아닙니다.');
-            this.dismissProgress();
-
-            return;
-        }
-
         fbDB.searchGroupId(groupID, (repeatList) => {
-            // var tmpDates = [];
             selectDateAry = [];
 
-            repeatList.map((repeat) => {
-                selectDateAry.push(repeat.seltedDate);
-
-                // tmpDates.push(`BookData/${repeat.seltedDate}/${this.props.selectFloor}/${this.props.selectRoomData.roomID}/${this.props.selectTime}`);
-            });
-
-            // this.setState({
-            //     repeatDates: tmpDates
-            // }, () => {
-            //     console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
-            // });
+            for(var date in repeatList.selectedDates) {
+                selectDateAry.push(repeatList.selectedDates[date]);
+            }
         });
     }
 
@@ -523,7 +560,7 @@ class BookRoom extends Component {
     checkValidUser(selectDateAry) {
 
         fbDB.checkMatchUser(selectDateAry, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, callback = (isMatch) => {
-            console.log("listenWriteBook isMatch: " + isMatch);
+            // console.log("listenWriteBook isMatch: " + isMatch);
 
             // 사용자 정보 일치
             if(isMatch) {
@@ -531,7 +568,7 @@ class BookRoom extends Component {
             }
             // 사용자 정보 일치하지 않음
             else {
-                Alert.alert('사용자가 일치하지 않습니다.');
+                Alert.alert('예약한 사용자만 수정이 가능합니다.');
                 this.dismissProgress();
             }
         });
@@ -551,7 +588,7 @@ class BookRoom extends Component {
             console.log("bookingFBdb memberObj: " + Object.values(this.state.memberObj));
 
             // static listenUpdateBook(bookingType, selectDateAry, floor, roomID, beginTime, endTime, repeatType, bookType, bookMemo, callback)
-            fbDB.listenUpdateBook(this.props.updateType, selectDateAry, this.state.memberObj, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, repeatType, this.state.bookType, this.state.bookMemo, this.props.selectData.groupID, (isSuccess) => {
+            fbDB.listenUpdateBook(this.props.updateType, selectDateAry, this.props.selectData.memberInfo, this.state.memberObj, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, repeatType, this.state.bookType, this.state.bookMemo, this.props.selectData.groupID, (isSuccess) => {
                 // 예약 완료
                 if(isSuccess) {
                     Alert.alert('예약이 수정 되었습니다.');
@@ -570,10 +607,27 @@ class BookRoom extends Component {
             fbDB.listenWriteBook(selectDateAry, this.state.memberObj, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, this.state.repeatType, this.state.bookType, this.state.bookMemo, (isSuccess) => {
                 // 예약 완료
                 if(isSuccess) {
-                    Alert.alert('예약이 완료 되었습니다.');
-
                     this.dismissProgress();
-                    this.onBackPress();
+
+                    Alert.alert(
+                        '',
+                        '예약이 완료 되었습니다.',
+                        [
+                            { text: '확인', onPress: () =>
+                                {
+                                    var routes = this.props.navigator.getCurrentRoutes();
+
+                                    // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
+                                    DeviceEventEmitter.emit('refreshMyBooking', {});
+
+                                    // 예약이 완료되면 최상단 마이페이지로 보내기
+                                    this.props.navigator.popToRoute(routes[1]);
+                                }
+                            },
+                        ],
+                        { cancelable: false }
+                    );
+
                 } else {
                     Alert.alert('예약실패. 다시 시도해주세요.');
                     this.dismissProgress();
@@ -617,7 +671,7 @@ class BookRoom extends Component {
                     animating={this.state.showProgress}/>
 
                 <NaviBar
-                    naviTitle="예약하기"
+                    naviTitle={title}
                     onBackPress={this.onBackPress} />
 
                 <ScrollView>
@@ -745,7 +799,7 @@ class BookRoom extends Component {
                     <View style={{backgroundColor: '#50829b', alignItems: 'center', borderRadius: 4, margin: 10, padding: 10}}>
                         <Text
                             style={{fontSize: 16, fontWeight: "bold", color: 'azure'}}>
-                            예 약 하 기
+                            {title}
                         </Text>
                     </View>
                 </TouchableWithoutFeedback>
@@ -797,31 +851,38 @@ class BookRoom extends Component {
 
     // 유저 선택 후 UI 세팅
     setSelectedUserUI() {
-        // 유저 선택하고 유저이름 보여주는 부분에 라인과 간격조절을 위해 marginBottom 조정
-        var userContainerBottomMargin = (this.state.selectedUsers.length / 5) * 30;
-        console.log("userContainerBottomMargin: " + userContainerBottomMargin + " this.state.selectedUsers: " + this.state.selectedUsers);
-        return (
-            <View style={[styles.selectUserContainer, {marginBottom: userContainerBottomMargin}]}>
-                {
-                    this.state.selectedUsers.map((user)=> {
-                        console.log("setSelectedUserUI user: " + Object.values(user))
-                        return (
-                            <View style={{marginRight: 5}}
-                                key={`users-${user.userID}`}>
-                                <Text style={{fontSize: 16, color: 'black', padding:5, borderColor: 'cornflowerblue',
-                                    borderWidth: 1,
-                                    borderRadius: 4,
-                                    backgroundColor: '#ffffff'}}>
-                                    {user.userName}
-                                </Text>
-                            </View>
-                        )
-                    })
-                }
-            </View>
-        )
-    }
+        try {
+            // 유저 선택하고 유저이름 보여주는 부분에 라인과 간격조절을 위해 marginBottom 조정
+            var userContainerBottomMargin = (this.state.selectedUsers.length / 5) * 30;
+            console.log("userContainerBottomMargin: " + userContainerBottomMargin + " this.state.selectedUsers: " + this.state.selectedUsers);
+            return (
+                <View style={[styles.selectUserContainer, {marginBottom: userContainerBottomMargin}]}>
+                    {
+                        this.state.selectedUsers.map((user)=> {
+                            console.log("setSelectedUserUI user: " + Object.values(user))
+                            return (
+                                <View style={{marginRight: 5}}
+                                    key={`users-${user.userID}`}>
+                                    <Text style={{fontSize: 16, color: 'black', padding:5, borderColor: 'cornflowerblue',
+                                        borderWidth: 1,
+                                        borderRadius: 4,
+                                        backgroundColor: '#ffffff'}}>
+                                        {user.userName}
+                                    </Text>
+                                </View>
+                            )
+                        })
+                    }
+                </View>
+            )
 
+            this.setState({
+                showProgress: false,
+            });
+        } catch(error) {
+            console.log("setSelectedUserUI error: " + error.toString());
+        }
+    }
 }
 const handleBackButtonPress = ({ navigator }) => {
     navigator.pop();

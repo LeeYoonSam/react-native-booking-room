@@ -135,17 +135,14 @@ class MainFloor extends Component {
             this.setState({
                 showProgress: true,
             }, () => {
-                console.log("call getRoomList currentFloor: " + currentFloor);
+                // console.log("call getRoomList currentFloor: " + currentFloor);
 
                 this.setState({
                     currentFloor: currentFloor
                 });
 
                 fbDB.listenMeetingRoomList(currentFloor, (roomLists) => {
-                    console.log("callback roomLists: " + roomLists);
-                    // this.setState({
-                    //     rooms: roomLists
-                    // });
+                    // console.log("callback roomLists: " + roomLists);
 
                     this.setState({
                         roomData: roomLists,
@@ -161,7 +158,7 @@ class MainFloor extends Component {
     }
 
     onPressFloor = (roomData) => {
-        console.log("roomData: " + roomData);
+        // console.log("roomData: " + roomData);
 
         this.props.navigator.push({
             name: 'MeetingRoomMain',
@@ -180,7 +177,7 @@ class MainFloor extends Component {
     }
 
     renderRoom(rowData) {
-        console.log("renderRoom rowData: " + Object.values(rowData));
+        // console.log("renderRoom rowData: " + Object.values(rowData));
 
         var bg;
 
@@ -308,7 +305,7 @@ class MainFloor extends Component {
 
         }
 
-    console.log("bg: " + bg);
+    // console.log("bg: " + bg);
 
         return <TouchableHighlight
             style={styles.tabView}

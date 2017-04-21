@@ -102,6 +102,20 @@ Array.prototype._userSearch = function(keyword) {
     return searchResult;
 }
 
+Array.prototype._removeMyUid = function(userID) {
+
+    var clone =  this.slice();
+
+    for(var k = 0; k < clone.length; k ++) {
+        // userID가 일치하는 유저 추가
+        if(clone[k].userID === userID) {
+            this.splice(k, 1);
+        }
+    }
+
+    return this;
+}
+
 class UserSearch extends Component {
     constructor(props) {
         super(props);
@@ -150,6 +164,10 @@ class UserSearch extends Component {
             }, () => {
                 // 파이어베이스 디비에서 user 정보를 가져옴
                 fbDB.getAuthUserList((userLists) => {
+
+                    // 내 uid를 가져와서 제외 시켜준다.
+                    userLists._removeMyUid(fbDB.getAuthUid());
+
                     if(this.props.selectedUsers !== undefined) {
                         if(this.props.selectedUsers.length > 0) {
                             userLists.map((userInfo) => {

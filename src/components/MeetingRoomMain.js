@@ -8,6 +8,7 @@ import {
     Dimensions,
     ActionSheetIOS,
     Platform,
+    DeviceEventEmitter,
     StyleSheet
 } from 'react-native';
 
@@ -232,14 +233,21 @@ class MeetingRoomMain extends Component {
                     item.bookMemo = book.bookMemo;
                     item.bookType = book.bookType;
                     item.repeatType = book.repeatType;
+                    item.memberInfo = book.memberInfo;
                 });
-
-                // // DB-2. callback에서 전체 시간별 예약 리스트를 가져옴
-                this.setState({
-                    dataSource: this.state.ds.cloneWithRows(tempList),
-                    showProgress: false,
-                });
+                
+                // 리스트 세팅 (콜백에서 this.setState 를 사용하면 warning이 나서 따로 함수로 빼서 호출)
+                this.setBookDataSource(tempList);
             });
+        });
+    }
+
+    // 리스트 세팅 (콜백에서 this.setState 를 사용하면 warning이 나서 따로 함수로 빼서 호출)
+    setBookDataSource(tempList) {
+        // // DB-2. callback에서 전체 시간별 예약 리스트를 가져옴
+        this.setState({
+            dataSource: this.state.ds.cloneWithRows(tempList),
+            showProgress: false,
         });
     }
 
@@ -435,40 +443,36 @@ class MeetingRoomMain extends Component {
 
     fbDeleteBooking = (groupID, isRemoveAll) => {
 
-        console.log("fbDeleteBooking groupID: " + groupID + " isRemoveAll: " + isRemoveAll);
+        // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
+        fbDB.checkAndDeleteMatchUser(this.state.repeatDates, this.state.repeatUsers, isRemoveAll, (isSuccess) => {
 
-        this.setState({
-            showProgress: true,
-        }, () => {
+            console.log("fbDeleteBooking isSuccess: " + isSuccess);
 
-            // 1. Firebase DB 에서 yymmdd/층/회의실/시간/userID를 비교 / 자신이 쓴 글이면 삭제 처리
-            fbDB.checkAndDeleteMatchUser(this.state.repeatDates, this.state.repeatUsers, isRemoveAll, (isSuccess) => {
+            // 삭제 완료
+            if(isSuccess) {
+                console.log("call success" );
+                Alert.alert('삭제가 완료 되었습니다.');
 
-                console.log("fbDeleteBooking isSuccess: " + isSuccess);
+                // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
+                DeviceEventEmitter.emit('refreshMyBooking', {});
 
-                // 삭제 완료
-                if(isSuccess) {
-                    console.log("call success" );
-                    Alert.alert('삭제가 완료 되었습니다.');
-
-                    if(groupID !== undefined) {
-                        if(isRemoveAll) {
-                            fbDB.removeAllBookingGroup(groupID);
-                        } else {
-                            fbDB.removeOneBookingGroup(groupID, this.state.dateStr);
-                        }
+                if(groupID !== undefined) {
+                    if(isRemoveAll) {
+                        fbDB.removeAllBookingGroup(groupID);
+                    } else {
+                        fbDB.removeOneBookingGroup(groupID, this.state.dateStr);
                     }
-
-                    // 다시 불러오기
-                    this.getBookList();
-
-                } else {
-                    console.log("call failed" );
-                    Alert.alert('삭제실패. 다시 시도해주세요.');
-
-                    this.dismissProgress();
                 }
-            });
+
+                // 다시 불러오기
+                this.getBookList();
+
+            } else {
+                console.log("call failed" );
+                Alert.alert('삭제실패. 다시 시도해주세요.');
+
+                this.dismissProgress();
+            }
         });
     }
 

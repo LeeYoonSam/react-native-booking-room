@@ -6,6 +6,7 @@ import {
     TouchableHighlight,
     Dimensions,
     Platform,
+    DeviceEventEmitter,
     StyleSheet
 } from 'react-native';
 
@@ -135,8 +136,17 @@ class MyBooking extends Component {
     }
 
     componentDidMount() {
+        // DeviceEventEmitter add Listener 예약이 추가되면 마이페이지 새로고침
+        DeviceEventEmitter.addListener('refreshMyBooking', () => {
+            this.getBookingList();
+        });
 
         this.getBookingList();
+    }
+
+    componentWillUnmount() {
+        // DeviceEventEmitter remove Listener
+        DeviceEventEmitter.removeAllListeners('refreshMyBooking');
     }
 
     getBookingList() {
@@ -148,7 +158,16 @@ class MyBooking extends Component {
 
             try {
                 fbDB.getMyBooking( (bookingList) => {
-                    // console.log("getBookingList bookingList: " + bookingList);
+                    console.log("getBookingList bookingList: " + bookingList);
+
+                    // 데이터를 가져올때 기존 데이터와 갯수가 같으면 리스트 세팅 안함
+                    if(bookingList === undefined || bookingList.length === this.state.bookingDatas.length) {
+                        this.setState({
+                            showProgress: false,
+                        });
+
+                        return;
+                    }
 
                     var tempList = tmpBookingLists.slice();
 
