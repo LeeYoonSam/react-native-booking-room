@@ -11,7 +11,17 @@ let rootGroupData = "GroupData/";
 let rootUserInfo = "UserInfo/";
 let rootNotificationGroup = "NotificationGroup/";
 
+var ALL_MEETINGROOM = {};
+
 class Database {
+
+    static getAllMeetingRoom() {
+        return ALL_MEETINGROOM;
+    }
+
+    static getBaseRef() {
+        return firebase.database().ref();
+    }
 
     static getAuthUid() {
         return firebase.auth().currentUser.uid;
@@ -98,6 +108,15 @@ class Database {
             });
 
             callback(roomLists);
+        });
+    }
+
+    // 회의실 목록 통째로 가져오기
+    static getAllMeetingRoomList() {
+        firebase.database().ref().child(rootMeetingRoom).once('value', (snapshot) => {
+            ALL_MEETINGROOM = JSON.parse(JSON.stringify(snapshot));
+
+            console.log("getAllMeetingRoomList: " + Object.values(ALL_MEETINGROOM));
         });
     }
 
@@ -461,28 +480,9 @@ class Database {
             // 반복 예약중에서 하나만 수정
             if(bookingType === CommonConst.BOOKING_TYPE.type_update_one) {
 
-                // 0. 반복 예약 중에서 하나만 수정할 경우 판단
-                // 1. 기존 예약에서 해당 유저들 예약/노티/마이페이지 삭제
-                // 2. 새로운 GroupID 생성
-                var groupID = `${floor}_${roomID}_${beginTime}_${repeatType.id}_${bookType.id}_${firebase.auth().currentUser.uid}_${new Date().getTime()}`;
-                // 3. 다시 해당 유저들의 예약/노티/마이페이지 생성
-
                 var yymmdd = selectDateAry[0];
-                let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
 
-                firebase.database().ref(bookWritePath).set({
-                    userID:firebase.auth().currentUser.uid,
-                    userEmail:firebase.auth().currentUser.email,
-                    groupID: groupID,
-                    beginTime: beginTime,
-                    endTime: endTime,
-                    modifyDate: new Date(),
-                    bookMemo: bookMemo,
-                    bookType: bookType,
-                    repeatType: repeatType,
-                    memberInfo: memberObj,
-                });
-
+                // 사용자 변경 유무 체크
                 if(originMemberObj.owenr === memberObj.owenr) {
 
                     console.log("setUserBookingData originMemberObj.members: " + originMemberObj.members);
@@ -518,27 +518,50 @@ class Database {
                     }
                     console.log("유저 변경");
 
-                    // GroupData 멤버 정보 변경
-                    Database.updateBookingGroup(groupID, memberObj);
-
+                    // 1. 기존 예약 수정및 삭제 처리
                     var childPathAry = [];
                     var childPath = `${yymmdd}/${floor}/${roomID}/${beginTime}`
 
                     childPathAry.push(childPath);
-
+                    // 1-1. 기존 예약에서 해당 유저들 노티/마이페이지 삭제
                     if(originMemberObj.members !== undefined) {
-                        // Todo 2. 유저별로 예약 삭제 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
-                        Database.setUserBookingData(childPathAry, originMemberObj, true);
 
-                        // Todo 3. NotificationGroup 삭제 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
+                        // 1-1-1. 변경되는 유저 예약 삭제 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
+                        Database.setUserBookingDelete(childPathAry, originMemberObj);
+
+                        // 1-1-2. 기존 NotificationGroup 삭제 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
                         Database.setNotificationGroup(childPathAry, originMemberObj, true);
                     }
 
-                    // Todo 4. 유저별 예약현황, 노티피케이션 그룹 재생성
-                    // 2. 유저별로 예약 생성하기 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
+                    // 1-2. 기존 반복예약에서 개별 수정되는 yymmdd를 삭제
+                    Database.removeOneBookingGroup(groupID, yymmdd);
+
+                    // 2. 새로운 GroupID 생성
+                    var groupID = `${floor}_${roomID}_${beginTime}_${repeatType.id}_${bookType.id}_${firebase.auth().currentUser.uid}_${new Date().getTime()}`;
+
+                    // 2-1. 새로생성된 GroupID로 변경
+                    let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+                    firebase.database().ref(bookWritePath).set({
+                        userID:firebase.auth().currentUser.uid,
+                        userEmail:firebase.auth().currentUser.email,
+                        groupID: groupID,
+                        beginTime: beginTime,
+                        endTime: endTime,
+                        modifyDate: new Date(),
+                        bookMemo: bookMemo,
+                        bookType: bookType,
+                        repeatType: repeatType,
+                        memberInfo: memberObj,
+                    });
+
+                    // 3. 새로운 예약이나 마찬가지이므로 해당 유저들의 예약/노티/마이페이지 새로 생성
+                    // 3-1. 그룹 데이터 만들기 - (백그라운드 작업)
+                    Database.setGroupData(groupID, selectDateAry, memberObj, childPathAry);
+
+                    // 3-2. 유저별로 예약 생성하기 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
                     Database.setUserBookingData(childPathAry, memberObj, false);
 
-                    // Todo 3. NotificationGroup 생성하기 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
+                    // 3-3. NotificationGroup 생성하기 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
                     Database.setNotificationGroup(childPathAry, memberObj, false);
                 }
 
@@ -754,6 +777,41 @@ class Database {
         }
     }
 
+    // 반복예약 개별 수정시만 사용!! 해당 userID 별(owner 제외) 회의시간 path 기록하기 삭제
+    static setUserBookingDelete(childPathAry, memberObj) {
+        try {
+
+            var memberAry = [];
+
+            if(memberObj.members !== undefined) {
+                for(var key in memberObj.members) {
+                    memberAry.push(memberObj.members[key]);
+                }
+            }
+
+            console.log("setUserBookingDelete childPathAry: " + childPathAry);
+            console.log("setUserBookingDelete memberAry: " + memberAry);
+
+            // 유저별로 회의정보 삭제하기(userID/yymmdd/floor/roomID/beginTime 형태)
+            memberAry.map( (uid)=> {
+                if(typeof uid !== 'string') {
+                    return;
+                }
+
+                console.log("setUserBookingDelete memberAry map uid: " + uid);
+                var userInfoPath = `${rootUserInfo}${uid}`;
+
+                childPathAry.map( (childPath)=> {
+                    console.log("setUserBookingDelete childPathAry map childPath: " + childPath);
+                    firebase.database().ref().child(`${userInfoPath}/${childPath}`).remove();
+                });
+            });
+
+        } catch (error) {
+            console.log('setUserBookingDelete error: ' + error.toString())
+        }
+    }
+
     // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
     static getMyBooking(callback) {
         try {
@@ -768,43 +826,40 @@ class Database {
             var userDataRef = firebase.database().ref(userDataPath);
 
             // 내 예약 리스트를 담을 배열
-            var myBooks = [];
+            // var myBooks = [];
 
-            // userDataRef.orderByKey().startAt(today).once("child_added", function(snapshot) {
+            userDataRef.orderByKey().startAt(today).on("value", function(snapshot) {
+
+                // BookingModel을 만들어서 재활용
+                var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
+                tmpBookingModel.setUserID(snapshot.key).setSubObject(snapshot);
+
+                callback(tmpBookingModel);
+            });
+
+            // // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
+            // // 오늘 날짜 이상의 데이터만 key 기준으로 정렬해서 데이터 가져옴
+            // userDataRef.orderByKey().startAt(today).on("child_added", function(snapshot) {
             //
             //     // BookingModel을 만들어서 재활용
             //     var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
             //     tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
             //
             //     myBooks.push(tmpBookingModel);
-            //     console.log("getMyBooking myBooks: " + JSON.stringify(myBooks));
+            //     console.log("getMyBooking child_added myBooks: " + JSON.stringify(myBooks));
             //
             //     callback(myBooks);
             // });
-
-            // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
-            // 오늘 날짜 이상의 데이터만 key 기준으로 정렬해서 데이터 가져옴
-            userDataRef.orderByKey().startAt(today).on("child_added", function(snapshot) {
-
-                // BookingModel을 만들어서 재활용
-                var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
-                tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
-
-                myBooks.push(tmpBookingModel);
-                console.log("getMyBooking myBooks: " + JSON.stringify(myBooks));
-
-                callback(myBooks);
-            });
-
-            callback(myBooks);
-
+            //
+            // // callback(myBooks);
+            //
             // userDataRef.orderByKey().startAt(today).on("child_removed", function(snapshot) {
             //     // BookingModel을 만들어서 재활용
             //     var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
             //     tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
             //
             //     myBooks.push(tmpBookingModel);
-            //     console.log("getMyBooking myBooks: " + JSON.stringify(myBooks));
+            //     console.log("getMyBooking child_removed myBooks: " + JSON.stringify(myBooks));
             //
             //     callback(myBooks);
             // });

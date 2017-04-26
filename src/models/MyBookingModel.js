@@ -1,11 +1,11 @@
 "use strict";
 
 var MyBookingModel = {
-    yymmdd: "",
+    userID: "",
     booking: {},
 
-    setYYMMDD: function(yymmdd) {
-        this.yymmdd = yymmdd;
+    setUserID: function(_userID) {
+        this.userID = _userID;
         return this;
     },
 

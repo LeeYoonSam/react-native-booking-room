@@ -85,6 +85,8 @@ var styles = StyleSheet.create({
     },
 });
 
+var meetingRoomInfo;
+
 class MainFloor extends Component {
 
     constructor(props) {
@@ -101,55 +103,75 @@ class MainFloor extends Component {
 
         this.handleChangeTab = this.handleChangeTab.bind(this);
         this.onPressFloor = this.onPressFloor.bind(this);
+        this.getFloor = this.getFloor.bind(this);
         this.getRoomList = this.getRoomList.bind(this);
         this.renderRoom = this.renderRoom.bind(this);
         this.renderMainFloor = this.renderMainFloor.bind(this);
         this.onBackPress = this.onBackPress.bind(this);
     }
 
-    async componentDidMount() {
+    componentWillMount() {
+        meetingRoomInfo = fbDB.getAllMeetingRoom();
+    }
 
-        try {
-            fbDB.listenFloorList((floorLists) => {
-                console.log("floorLists: " + floorLists);
-                this.setState({
-                    floors: floorLists,
-                    currentFloor: floorLists[0].floor,
-                }, () => {
-                    this.getRoomList(this.state.currentFloor);
-                });
-            });
-
-        } catch (error) {
-            console.log(error);
-        }
+    componentDidMount() {
+        this.getFloor();
     }
 
     onBackPress() {
         this.props.navigator.pop();
     }
 
-    async getRoomList(currentFloor) {
+    getFloor() {
+        var floorLists = [];
+        var roomLists = [];
+
+        // console.log("MainFloor getFloor: " + Object.values(meetingRoomInfo));
+
+        for(key in meetingRoomInfo) {
+            // console.log("MainFloor floor: " + key);
+            // console.log("MainFloor meetingRoomInfo key: " + key);
+            floorLists.push(key);
+        }
+
+        this.setState({
+            showProgress: true,
+            floors: floorLists,
+            currentFloor: floorLists[0]
+        }, () => {
+            this.getRoomList(this.state.currentFloor);
+        });
+    }
+
+    getRoomList(currentFloor) {
         try {
+            // console.log("MainFloor currentFloor: " + currentFloor);
+
+            var roomDatas = meetingRoomInfo[currentFloor];
+            // console.log("MainFloor getRoomList roomDatas: " + roomDatas);
+
+            var roomLists = [];
+
+            for(roomKey in roomDatas) {
+                var roomInfo = roomDatas[roomKey];
+
+                // console.log("MainFloor getRoomList roomInfo: " + Object.values(roomInfo));
+
+                var rooms = roomLists.slice()
+                rooms.push({
+                    roomID: roomKey,
+                    roomTitle: roomInfo.name,
+                    roomImg: roomInfo.img
+                });
+
+                roomLists = rooms;
+            }
 
             this.setState({
-                showProgress: true,
-            }, () => {
-                // console.log("call getRoomList currentFloor: " + currentFloor);
-
-                this.setState({
-                    currentFloor: currentFloor
-                });
-
-                fbDB.listenMeetingRoomList(currentFloor, (roomLists) => {
-                    // console.log("callback roomLists: " + roomLists);
-
-                    this.setState({
-                        roomData: roomLists,
-                        dataSource: this.state.dataSource.cloneWithRows(roomLists),
-                        showProgress: false,
-                    });
-                });
+                currentFloor: currentFloor,
+                roomData: roomLists,
+                dataSource: this.state.dataSource.cloneWithRows(roomLists),
+                showProgress: false,
             });
 
         } catch (error) {
@@ -170,15 +192,13 @@ class MainFloor extends Component {
     // i가 객체로 만들어져 있어 i.i로 해야 position을 가져올수 있다.
     handleChangeTab = (i, ref, from,) => {
         try {
-            this.getRoomList(this.state.floors[i.i].floor);
+            this.getRoomList(this.state.floors[i.i]);
         } catch (error) {
             console.log("handleChangeTab: " + error)
         }
     }
 
     renderRoom(rowData) {
-        // console.log("renderRoom rowData: " + Object.values(rowData));
-
         var bg;
 
         switch (rowData.roomTitle) {
@@ -343,11 +363,12 @@ class MainFloor extends Component {
                     onChangeTab={this.handleChangeTab}
                     >
 
-                    {this.state.floors.map((floors, i) => {
-                        return <View style={{flex:1}} tabLabel={`${floors.floor}층`} key={`${floors.floor}-${i}`}>
+                    {this.state.floors.map((floor, i) => {
+                        return <View style={{flex:1}} tabLabel={`${floor}층`} key={`${floor}-${i}`}>
                             <ListView
                                 contentContainerStyle={styles.listContainer}
                                 dataSource={this.state.dataSource}
+                                enableEmptySections={true}
                                 renderRow={(rowData) =>
                                     this.renderRoom(rowData)
                                 }

@@ -5,6 +5,35 @@ import {
     View,
 } from 'react-native';
 
+Array.prototype._userSearch = function(keyword) {
+
+    var clone =  this.slice();
+    var searchResult = [];
+
+    for(var i = 0; i < clone.length; i ++) {
+        // 비교문자, 키워드 전부 소문자로 대치해서 비교
+        if(clone[i].userName.toLowerCase().search(keyword.toLowerCase()) !== -1) {
+            searchResult.push(clone[i]);
+        }
+    }
+
+    return searchResult;
+}
+
+Array.prototype._removeMyUid = function(userID) {
+
+    var clone =  this.slice();
+
+    for(var k = 0; k < clone.length; k ++) {
+        // userID가 일치하는 유저 추가
+        if(clone[k].userID === userID) {
+            this.splice(k, 1);
+        }
+    }
+
+    return this;
+}
+
 module.exports = {
 
     cloneObject(obj) {

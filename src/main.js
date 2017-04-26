@@ -17,6 +17,8 @@ var MeetingRoomMain = require('./components/MeetingRoomMain');
 var BookRoom = require('./components/BookRoom');
 var UserSearch = require('./components/UserSearch');
 
+import fbDB from './firebase/Database';
+
 // 스와이프백 제스쳐로 뒤로 가기 막기
 const NoBackSwipe = {
     ...Navigator.SceneConfigs.HorizontalSwipeJump,
@@ -38,6 +40,9 @@ module.exports = backAndroid(React.createClass({
         Firebase.initialise();
 
         this.getInitialView();
+
+        // 앱 시작시 회의실 목록 받아오기
+        fbDB.getAllMeetingRoomList();
     },
 
     // 로그인 판단해서 어떤 뷰를 보여줄지 결정해서 state 업데이트
@@ -48,7 +53,7 @@ module.exports = backAndroid(React.createClass({
             userLoaded: true,
             // 더미 테스트
             // initialView: "MyBooking",
-            
+
             initialView: "LoginForFirebase",
         })
     },

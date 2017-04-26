@@ -119,6 +119,7 @@ class MyBooking extends Component {
         this.state = {
             ds : new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}),
             bookingDatas: [],
+            placeName: '',
             showProgress: false,
         };
 
@@ -157,85 +158,114 @@ class MyBooking extends Component {
             var tmpBookingLists = [];
 
             try {
-                fbDB.getMyBooking( (bookingList) => {
-                    console.log("getBookingList bookingList: " + bookingList);
+                fbDB.getMyBooking( (bookingData) => {
 
                     // 데이터를 가져올때 기존 데이터와 갯수가 같으면 리스트 세팅 안함
-                    if(bookingList === undefined || bookingList.length === this.state.bookingDatas.length) {
-                        this.setState({
-                            showProgress: false,
-                        });
-
+                    if(bookingData === undefined || bookingData.booking.length === this.state.bookingDatas.length) {
+                        this.stopProgress();
                         return;
                     }
 
                     var tempList = tmpBookingLists.slice();
 
-                    bookingList.map((book) => {
-                        // console.log("getMyBooking bookingList book: " + Object.values(book));
+                    var bookingObj = bookingData.booking;
+                    for(var bookKey in bookingObj) {
+                        if(bookingObj.hasOwnProperty(bookKey)) {
 
-                        // yymmdd 가져오기
-                        var yymmdd = book.yymmdd;
+                        }
+                        // 쓰레기 데이터, 파이어베이스 뒷부분 사용하지 않음.
+                        if(bookingObj[bookKey] === undefined) {
+                            continue;
+                        }
 
-                        var floorKeys = Object.keys(book.booking);
-                        // console.log("getMyBooking bookingList keys: " + floorKeys);
+                        var tmpFloor = bookingObj[bookKey];
 
-                        // 1. for문 돌면서 beginTime 들을 꺼내서 리스트 갯수를 생성(최종 갯수는 beginTime의 갯수와 동일)
-                        floorKeys.forEach((keyFloor)=> {
-                            var floor = keyFloor;
+                        for(var floorKey in tmpFloor) {
+                            // 쓰레기 데이터, 파이어베이스 뒷부분 사용하지 않음.
+                            if(tmpFloor[floorKey] === undefined) {
+                                continue;
+                            }
 
-                            var floorBook = book.booking[floor];
-                            // console.log("getMyBooking floorBook: " + Object.values(floorBook));
+                            var tmpRoom = tmpFloor[floorKey];
 
-                            var roomKeys = Object.keys(floorBook);
-                            // console.log("getMyBooking roomKeys: " + roomKeys);
+                            for(var roomKey in tmpRoom) {
 
-                            roomKeys.forEach((keyRoomID)=> {
-                                var roomID = keyRoomID;
+                                // 쓰레기 데이터, 파이어베이스 뒷부분 사용하지 않음.
+                                if(tmpRoom[roomKey] === undefined) {
+                                    continue;
+                                }
 
-                                var roomIDBook = floorBook[roomID];
-                                // console.log("getMyBooking roomIDBook: " + Object.values(roomIDBook));
+                                var tmpTime = tmpRoom[roomKey];
+                                // console.log("getBookingList tmpTime: " + JSON.stringify(tmpTime));
 
-                                var timeKeys = Object.keys(roomIDBook);
-                                // console.log("getMyBooking timeKeys: " + timeKeys);
+                                for(beginTime in tmpTime) {
+                                    if(tmpTime.hasOwnProperty(beginTime)) {
+                                        var tempBooking = {};
+                                        tempBooking.beginTime = beginTime;
+                                        tempBooking.yymmdd = bookKey;
+                                        tempBooking.floor = floorKey;
+                                        tempBooking.roomID = roomKey;
+                                        tempBooking.date = `${ bookKey.substr(0,4) }. ${ bookKey.substr(4,2) }. ${ bookKey.substr(6,2) }`;
+                                        // console.log("getBookingList tempBooking: " + Object.values(tempBooking));
 
-                                timeKeys.forEach((beginTime)=> {
-                                    var tempBooking = {};
-
-                                    tempBooking.beginTime = beginTime;
-                                    tempBooking.yymmdd = yymmdd;
-                                    tempBooking.floor = floor;
-                                    tempBooking.roomID = roomID;
-                                    tempBooking.date = `${ yymmdd.substr(0,4) }. ${ yymmdd.substr(4,2) }. ${ yymmdd.substr(6,2) }`;
-                                    // console.log("getMyBooking tempBooking: " + Object.values(tempBooking));
-
-                                    tempList.push(tempBooking);
-                                    // console.log("getMyBooking tempList: " + tempList);
-                                })
-                            });
-
-                        });
+                                        tempList.push(tempBooking);
+                                    }
+                                }
+                            }
+                        }
 
                         tmpBookingLists = tempList;
-
-                    });
-
-                    tmpBookingLists = CommonUtil.removeDuplicateAry(tmpBookingLists);
-
-                    // // DB-2. callback에서 전체 시간별 예약 리스트를 가져옴
-                    this.setState({
-                        dataSource: this.state.ds.cloneWithRows(tmpBookingLists),
-                        bookingDatas: bookingList,
-                        showProgress: false,
-                    });
+                    }
+                    this.setPlaceRoom(tmpBookingLists);
+                    // this.setDisplay(tmpBookingLists);
                 });
             } catch(error) {
                 this.setState({
                     showProgress: false,
                 });
 
-                console.log(error.toString());
+                console.log("getBookingList error: " + error.toString());
             }
+        });
+    }
+
+    // 회의실 이름 가져와서 배열 재가공
+    setPlaceRoom(tmpBookingLists) {
+
+        var meetingRoomInfo = fbDB.getAllMeetingRoom();
+        // console.log("setPlaceRoom meetingRoomInfo: " + Object.values(meetingRoomInfo));
+
+        var reWorkList = [];
+
+        tmpBookingLists.map((book) => {
+            var tmpInfo = meetingRoomInfo[book.floor][book.roomID];
+            // console.log("setPlaceRoom getBookData: " + Object.values(tmpInfo));
+
+            var placeName = `${book.floor}층 ${tmpInfo.name}`;
+            // console.log("setPlaceRoom placeName: " + placeName);
+
+            book.placeName = placeName;
+
+            reWorkList.push(book);
+        });
+
+        this.setDisplay(reWorkList);
+    }
+
+    setDisplay(tmpBookingLists) {
+
+        // 리스트 세팅
+        this.setState({
+            dataSource: this.state.ds.cloneWithRows(tmpBookingLists),
+            bookingDatas: tmpBookingLists,
+        }, ()=> {
+            this.stopProgress();
+        });
+    }
+
+    stopProgress() {
+        this.setState({
+            showProgress: false
         });
     }
 
@@ -256,14 +286,22 @@ class MyBooking extends Component {
                 console.log("getPlaceName: " + placeName);
 
                 return <Text style={styles.rowPlace}>{placeName}</Text>
+
+                // return placeName;
             });
         } catch (e) {
-            console.log(e.toString());
-            return <Text style={styles.rowPlace}>{`${rowData.floor}층`}</Text>
+            console.log("getPlaceName error: " + e.toString());
+
+            var placeName = `${rowData.floor}층`;
+            // return placeName;
+
+            return <Text style={styles.rowPlace}>{placeName}</Text>
         }
     }
 
     renderMyBook(rowData) {
+        // console.log("renderMyBook rowData: " + Object.values(rowData));
+        // console.log("renderMyBook rowData.key: " + rowData.yymmdd);
 
         return (
             <TouchableHighlight
@@ -276,7 +314,7 @@ class MyBooking extends Component {
                     </View>
                     <View style={styles.rowMemoContainer}>
                         <Text style={styles.rowDate}>{rowData.date}</Text>
-                        {this.getPlaceName(rowData)}
+                        <Text style={styles.rowPlace}>{rowData.placeName}</Text>
                     </View>
                 </View>
 
