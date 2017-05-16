@@ -1,5 +1,7 @@
 package com.bookmeetingroom;
 
+import android.content.Intent;
+
 import com.facebook.react.ReactActivity;
 
 public class MainActivity extends ReactActivity {
@@ -14,7 +16,8 @@ public class MainActivity extends ReactActivity {
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
+    public void onNewIntent (Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
     }
 }

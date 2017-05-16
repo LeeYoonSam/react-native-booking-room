@@ -7,6 +7,7 @@ import {
     Dimensions,
     Platform,
     DeviceEventEmitter,
+    AsyncStorage,
     StyleSheet
 } from 'react-native';
 
@@ -15,7 +16,9 @@ import { hardwareBackPress, exitApp } from 'react-native-back-android';
 import RNBottomSheet from 'react-native-bottom-sheet';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
+// import FirebaseClient from "../firebase/FirebaseClient";
 import fbDB from '../firebase/Database';
+
 import CommonUtil from '../util/CommonUtil';
 
 import StatusBar from './StatusBar';
@@ -26,6 +29,8 @@ import CommonConst from "../consts/CommonConst";
 import SecretText from "../consts/SecretText";
 
 const window = Dimensions.get('window');
+
+const marginAOS = (Platform.OS === 'ios') ? 0 : 20;
 
 var styles = StyleSheet.create({
     container: {
@@ -88,11 +93,11 @@ var styles = StyleSheet.create({
     },
 
     viewFloatBook: {
+        // alignItems:'flex-end',      // 가로 정렬
+        // justifyContent:'flex-end',  // 세로 정렬
+        position: 'absolute',
         marginLeft: window.width - 50, // ListView 위에 위치하고 화면은 가리지 않기위해 마진으로 적용(우하단 위치)
-        marginTop: window.height - 50, // ListView 위에 위치하고 화면은 가리지 않기위해 마진으로 적용(우하단 위치)
-        alignItems:'flex-end',      // 가로 정렬
-        justifyContent:'flex-end',  // 세로 정렬
-        position: 'absolute'
+        marginTop: window.height - 50 - marginAOS, // ListView 위에 위치하고 화면은 가리지 않기위해 마진으로 적용(우하단 위치)
     },
 
     viewMoveBook: {
@@ -110,7 +115,7 @@ class MyBooking extends Component {
     handleHardwareBackPress() {
         console.log('* Scene1 back press');
         exitApp();
-        return true;
+        return false;
     }
 
     constructor(props) {
@@ -121,6 +126,7 @@ class MyBooking extends Component {
             bookingDatas: [],
             placeName: '',
             showProgress: false,
+            token: "",
         };
 
         this.getBookingList = this.getBookingList.bind(this);
@@ -142,6 +148,13 @@ class MyBooking extends Component {
             this.getBookingList();
         });
 
+        AsyncStorage.getItem("pushToken").then((token) => {
+           this.setState({ token : token}, () => {
+               // 파이어베이스 UserData에 token 업데이트
+               fbDB.setPushToken(this.state.token);
+           });
+       }).done();
+
         this.getBookingList();
     }
 
@@ -149,6 +162,7 @@ class MyBooking extends Component {
         // DeviceEventEmitter remove Listener
         DeviceEventEmitter.removeAllListeners('refreshMyBooking');
     }
+
 
     getBookingList() {
         this.setState({
@@ -161,7 +175,12 @@ class MyBooking extends Component {
                 fbDB.getMyBooking( (bookingData) => {
 
                     // 데이터를 가져올때 기존 데이터와 갯수가 같으면 리스트 세팅 안함
-                    if(bookingData === undefined || bookingData.booking.length === this.state.bookingDatas.length) {
+                    if(bookingData === undefined || bookingData.booking === null) {
+                        this.stopProgress();
+                        return;
+                    }
+
+                    if(bookingData.booking.length === this.state.bookingDatas.length) {
                         this.stopProgress();
                         return;
                     }
@@ -361,7 +380,8 @@ class MyBooking extends Component {
 
                 {this.checkLists()}
 
-                <View style={styles.viewFloatBook}>
+                <View zIndex={1}
+                    style={styles.viewFloatBook}>
                     <TouchableHighlight
                         underlayColor={'transparent'}
                         onPress={() => this.onMoveBook()}>
@@ -378,9 +398,9 @@ class MyBooking extends Component {
     }
 }
 
-const handleBackButtonPress = ({ navigator }) => {
-    navigator.pop();
-    return true;
-};
+// const handleBackButtonPress = ({ navigator }) => {
+//     navigator.pop();
+//     return true;
+// };
 
-module.exports = hardwareBackPress(MyBooking, handleBackButtonPress);
+module.exports = MyBooking;

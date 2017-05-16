@@ -31,6 +31,51 @@ class Database {
         return firebase.auth().currentUser.email;
     }
 
+    // 유저별 PushToken 저장
+    static setPushToken(token) {
+        try {
+            console.log("setPushToken token: " + token);
+
+            let myUid = Database.getAuthUid();
+            let userInfoPath = `${rootUserData}${myUid}`;
+
+            firebase.database().ref(userInfoPath).once('value', (snapshot) => {
+                snapshot.ref.set({
+                    userEmail: snapshot.val().userEmail,
+                    userGroup: snapshot.val().userGroup,
+                    userName: snapshot.val().userName,
+                    userPushToken: token,
+                });
+            })
+        } catch(error) {
+            console.log("setPushToken: " + error.toString());
+        }
+    }
+
+    // 유저별 PushToken 가져오기
+    static getUserPushToken(users, callback) {
+        try {
+            var pushTokens = [];
+
+            users.map( (user) => {
+                let userTokenPath = `${rootUserData}${user.userID}/userPushToken`;
+
+                firebase.database().ref(userTokenPath).once('value', (snapshot) => {
+                    console.log("getUserPushToken snapshot: " + snapshot.val());
+                    pushTokens.push(snapshot.val());
+                })
+
+                console.log("getUserPushToken pushTokens in map: " + pushTokens);
+            });
+
+            console.log("getUserPushToken pushTokens: " + pushTokens);
+            callback(pushTokens);
+
+        } catch(error) {
+            console.log("getUserPushToken error: " + error.toString());
+        }
+    }
+
     // 유저 리스트 가져오기
     static getAuthUserList(callback) {
 
@@ -49,6 +94,7 @@ class Database {
                         userEmail: child.val().userEmail,
                         userGroup: child.val().userGroup,
                         userName: child.val().userName,
+                        userPushToken: child.val().userPushToken,
                         isChecked: false
                     })
 
@@ -877,6 +923,26 @@ class Database {
     // 예약시 Notification을 보낼수 있게 예약별로 멤버 그룹핑
     static setNotificationGroup(bookingPaths, memberObj, isRemove) {
         try {
+            // const subjectsRef = firebase.database().ref('subjects');
+            // const notificationReqsRef = firebase.database().ref('notificationRequests');
+            // const subjectData = {
+            //   author: 'TJ',
+            //   title: 'NotiTest',
+            // };
+            // const notificationReq = {
+            //   from_username: 'TJ',
+            //   message: `just posted new topic "${this.state.topicText}"`,
+            // };
+            //
+            // const newSubjectKey = subjectsRef.push().key;
+            // const newNotificationReqKey = notificationReqsRef.push().key;
+            //
+            // const updates = {};
+            // updates[`/topics/${newSubjectKey}`] = subjectData;
+            // updates[`/notificationRequests/${newNotificationReqKey}`] = notificationReq;
+            // firebase.database().ref().update(updates);
+
+
             bookingPaths.map( (bookingPath)=> {
                 let notificationGroup = `${rootNotificationGroup}${bookingPath}`;
 
@@ -892,7 +958,6 @@ class Database {
                         users: memberObj
                     });
                 }
-
             });
 
         } catch (error) {
@@ -926,6 +991,20 @@ class Database {
         } catch (error) {
             console.log('getUserBookingData error: ' + error.toString())
             callback(null);
+        }
+    }
+
+    // user의 pushToken을 가져옴 - 추후에 푸시토큰만큼 개별 푸시 등록 작업해야함!!
+    static getUserPushTokens(users, callback) {
+        try {
+            Database.getAuthUserList((userList) => {
+                var userTokens = userList._matchUserID(users);
+                console.log("userTokens: " + userTokens);
+
+                callback(userTokens);
+            });
+        } catch (error) {
+            console.log("getUserPushTokens error: " + error.toString())
         }
     }
 }

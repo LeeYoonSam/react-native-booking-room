@@ -5,6 +5,44 @@ import {
     View,
 } from 'react-native';
 
+Array.prototype._matchUserID = function(users) {
+
+    var clone =  this.slice();
+    var tokenResults = [];
+
+    console.log("prototype._matchUserID users: " +  users);
+
+    users.map((userID)=> {
+        console.log("prototype._matchUserID userID: " +  userID);
+
+        for(var i = 0; i < clone.length; i ++) {
+            if(clone[i].userID === userID) {
+                console.log("prototype._matchUserID userPushToken: " +  clone[i].userPushToken);
+                if(clone[i].userPushToken !== undefined) {
+                    tokenResults.push(clone[i].userPushToken);
+                }
+
+                break;
+            }
+        }
+    });
+    // for(var key in users) {
+    //
+    //     var userID = users[key];
+    //     console.log("prototype._matchUserID userID: " +  userID);
+    //
+    //     for(var i = 0; i < clone.length; i ++) {
+    //         if(clone[i].userID === userID) {
+    //             console.log("prototype._matchUserID userPushToken: " +  clone[i].userPushToken);
+    //             tokenResults.push(clone[i].userPushToken);
+    //             break;
+    //         }
+    //     }
+    // }
+
+    return tokenResults;
+}
+
 Array.prototype._userSearch = function(keyword) {
 
     var clone =  this.slice();

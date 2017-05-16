@@ -38,11 +38,13 @@ class NaviBar extends Component {
                 <TouchableHighlight
                     underlayColor={'transparent'}
                     onPress={this.props.onBackPress}>
-
-                    <View style={{flexDirection: 'row'}}>
-                        <Text style={{marginLeft: 15, color: 'black'}}>&lt;</Text>
-                        <Text style={{marginLeft: 10, fontSize: 18, color: 'black'}}>{this.props.naviTitle}</Text>
-                        {this.renderRightButton()}
+                    <View>
+                        <View style={{flex:1, opacity:0, width: window.width}}></View>
+                        <View style={{flexDirection: 'row'}}>
+                            <Text style={{marginLeft: 15, color: 'black'}}>&lt;</Text>
+                            <Text style={{marginLeft: 10, fontSize: 18, color: 'black'}}>{this.props.naviTitle}</Text>
+                            {this.renderRightButton()}
+                        </View>
                     </View>
 
                 </TouchableHighlight>

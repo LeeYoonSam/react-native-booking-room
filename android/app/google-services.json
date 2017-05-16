@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "765500703433",
+    "firebase_url": "https://bookmeetingroom-150ca.firebaseio.com",
+    "project_id": "bookmeetingroom-150ca",
+    "storage_bucket": "bookmeetingroom-150ca.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:765500703433:android:fd96acd02fa00388",
+        "android_client_info": {
+          "package_name": "com.bookmeetingroom"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "765500703433-5hltndo89rkt7par179srtqp1a7q2n53.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookmeetingroom",
+            "certificate_hash": "fa1553bf738496534624ae045f17093814201828"
+          }
+        },
+        {
+          "client_id": "765500703433-ak7u8ci7icaobp2qd0jhfhda2bchetn7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBGo-8OQRuNMFH_i6S0FHH9dVc-M4ND4w"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "765500703433-ak7u8ci7icaobp2qd0jhfhda2bchetn7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

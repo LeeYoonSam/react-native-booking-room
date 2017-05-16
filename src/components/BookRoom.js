@@ -20,6 +20,7 @@ import CalendarPicker from '../../library/CalendarPicker/CalendarPicker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 import fbDB from '../firebase/Database';
+import FirebaseClient from "../firebase/FirebaseClient";
 
 import NaviBar from './NaviBar';
 import Loading from "./Loading";
@@ -593,6 +594,67 @@ class BookRoom extends Component {
                 if(isSuccess) {
                     Alert.alert('예약이 수정 되었습니다.');
 
+                    // 예약된 멤버들에게 즉시 푸시발송 - 메시지 세팅해야함
+                    var users = [];
+                    console.log("start immediate push");
+                    users.push(this.state.memberObj.owner);
+                    // users.push(this.state.memberObj.members);
+
+                    this.state.memberObj.members.map((userID) => {
+                        users.push(userID);
+                    });
+
+                    console.log("listenUpdateBook users: " + users);
+
+                    fbDB.getUserPushTokens(users, (tokens) => {
+                        console.log("listenUpdateBook tokens: " + tokens);
+                        if(tokens.length > 0) {
+                            var pushDate = '';
+
+                            if(selectDateAry.length > 1) {
+                                var tmpDate = selectDateAry[0];
+                                var year = tmpDate.substring(0,4);
+                                var month = tmpDate.substring(4,6);
+                                var day = tmpDate.substring(6,8);
+
+                                var tmpStartDate = `${year}년 ${month}월 ${day}일`
+
+                                tmpDate = selectDateAry[selectDateAry.length -1];
+                                year = tmpDate.substring(0,4);
+                                month = tmpDate.substring(4,6);
+                                day = tmpDate.substring(6,8);
+
+                                var tmpEndDate = `${year}년 ${month}월 ${day}일`
+
+                                pushDate = `${tmpStartDate}~${tmpEndDate}`;
+                            } else {
+                                var tmpDate = selectDateAry[0];
+                                var year = tmpDate.substring(0,4);
+                                var month = tmpDate.substring(4,6);
+                                var day = tmpDate.substring(6,8);
+
+                                var tmpStartDate = `${year}년 ${month}월 ${day}일`
+                                pushDate = `${tmpStartDate}`;
+                            }
+
+                            var meetingRoomInfo = fbDB.getAllMeetingRoom();
+                            var roomName = meetingRoomInfo[this.props.selectFloor][this.props.selectRoomData.roomID].name;
+
+                            var pushTitle = `${this.props.selectFloor}층 ${roomName} ${this.state.bookType.name} 예약`;
+                            var pushContent = `${pushDate} ${this.props.selectTime}시에 예약 되었습니다.`;
+                            FirebaseClient.sendData(tokens, pushTitle, pushContent);
+                        }
+
+
+                        // tokens.map( (token) => {
+                        //     console.log("listenUpdateBook token: " + token);
+                        //
+                        //     FirebaseClient.sendData(token);
+                        //
+                        //     // setTimeout(FirebaseClient.sendData(token), 1000);
+                        // });
+                    });
+
                     this.dismissProgress();
                     this.onBackPress();
                 } else {
@@ -608,6 +670,64 @@ class BookRoom extends Component {
                 // 예약 완료
                 if(isSuccess) {
                     this.dismissProgress();
+
+                    // 예약된 멤버들에게 즉시 푸시발송 - 메시지 세팅해야함
+                    var users = [];
+                    console.log("start immediate push");
+                    users.push(this.state.memberObj.owner);
+                    // users.push(this.state.memberObj.members);
+
+                    this.state.memberObj.members.map((userID) => {
+                        users.push(userID);
+                    });
+
+                    console.log("listenUpdateBook users: " + users);
+
+                    fbDB.getUserPushTokens(users, (tokens) => {
+                        console.log("listenUpdateBook tokens: " + tokens);
+
+                        if(tokens.length > 0) {
+                            var pushDate = '';
+
+                            if(selectDateAry.length > 1) {
+                                var tmpDate = selectDateAry[0];
+                                var year = tmpDate.substring(0,4);
+                                var month = tmpDate.substring(4,6);
+                                var day = tmpDate.substring(6,8);
+
+                                var tmpStartDate = `${year}년 ${month}월 ${day}일`
+
+                                tmpDate = selectDateAry[selectDateAry.length -1];
+                                year = tmpDate.substring(0,4);
+                                month = tmpDate.substring(4,6);
+                                day = tmpDate.substring(6,8);
+
+                                var tmpEndDate = `${year}년 ${month}월 ${day}일`
+
+                                pushDate = `${tmpStartDate}~${tmpEndDate}`;
+                            } else {
+                                var tmpDate = selectDateAry[0];
+                                var year = tmpDate.substring(0,4);
+                                var month = tmpDate.substring(4,6);
+                                var day = tmpDate.substring(6,8);
+
+                                var tmpStartDate = `${year}년 ${month}월 ${day}일`
+                                pushDate = `${tmpStartDate}`;
+                            }
+
+                            var meetingRoomInfo = fbDB.getAllMeetingRoom();
+                            var roomName = meetingRoomInfo[this.props.selectFloor][this.props.selectRoomData.roomID].name;
+
+                            var pushTitle = `${this.props.selectFloor}층 ${roomName} ${this.state.bookType.name} 예약`;
+                            var pushContent = `${pushDate} ${this.props.selectTime}시에 예약 되었습니다.`;
+                            FirebaseClient.sendData(tokens, pushTitle, pushContent);
+                        }
+
+                        // tokens.map( (token) => {
+                        //     console.log("listenUpdateBook token: " + token);
+                        //     FirebaseClient.sendData(token);
+                        // });
+                    });
 
                     Alert.alert(
                         '',

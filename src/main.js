@@ -1,13 +1,19 @@
 import React, { Component } from 'react';
 import {
+    View,
     Navigator,
+    AppState,
+    Platform,
+    AsyncStorage,
     StyleSheet
 } from 'react-native';
 
 import backAndroid from 'react-native-back-android';
 
 import Firebase from "./firebase/Firebase";
-import * as firebase from "firebase";
+import fbDB from './firebase/Database';
+
+import PushController from "./firebase/PushController";
 
 // var Login = require('./components/login');
 var MyBooking = require('./components/MyBooking');
@@ -16,8 +22,6 @@ var MainFloor = require('./components/MainFloor');
 var MeetingRoomMain = require('./components/MeetingRoomMain');
 var BookRoom = require('./components/BookRoom');
 var UserSearch = require('./components/UserSearch');
-
-import fbDB from './firebase/Database';
 
 // 스와이프백 제스쳐로 뒤로 가기 막기
 const NoBackSwipe = {
@@ -28,16 +32,19 @@ const NoBackSwipe = {
 };
 
 module.exports = backAndroid(React.createClass({
+
     getInitialState: function() {
         return {
             userLoaded: false,
-            initialView: null
+            initialView: null,
+            token: "",
+            tokenCopyFeedback: ""
         };
     },
 
     // 컴포넌트가 마운트 될때 뷰초기화 시작
     componentWillMount: function() {
-        Firebase.initialise();
+        // Firebase.initialise();
 
         this.getInitialView();
 
@@ -127,13 +134,23 @@ module.exports = backAndroid(React.createClass({
 
     // 렌더링
     render: function() {
+
         return (
-            <Navigator
-                style={ styles.container }
-                initialRoute={ {name: this.state.initialView} } // 네비게이션 최상위 뷰 설정
-                renderScene={this.renderScene}                  // 화면 렌더링
-                configureScene={ this._configureScene }         // 화면 설정
-                />
+            <View style={ styles.container}>
+                <PushController
+                    onChangeToken={token => this.setState({token: token || ""}, () => {
+
+                        // 내부 저장소에 토큰 저장
+                        AsyncStorage.setItem("pushToken", this.state.token);
+                    })} />
+
+                    <Navigator
+                        style={ styles.container }
+                        initialRoute={ {name: this.state.initialView} } // 네비게이션 최상위 뷰 설정
+                        renderScene={this.renderScene}                  // 화면 렌더링
+                        configureScene={ this._configureScene }         // 화면 설정
+                        />
+            </View>
         );
     }
 })

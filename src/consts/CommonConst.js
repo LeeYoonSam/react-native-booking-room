@@ -36,12 +36,5 @@ module.exports = {
       type_write: 0,
       type_update_all: 1,
       type_update_one: 2,
-  },
-
-    //   M : {id: "m", name: "회의", color: "red"},
-    //   I : {id: "i", name: "면접", color: "green"},
-    //   S : {id: "s", name: "스터디", color: "blue"},
-    //   E : {id: "e", name: "기타", color: "gray"}
-  // },
-
+  }
 };
