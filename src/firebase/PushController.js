@@ -10,6 +10,10 @@ export default class PushController extends Component {
 
     componentDidMount() {
         try {
+            if(Platform.OS === 'ios') {
+                return;
+            }
+
             FCM.requestPermissions();
             console.log("Call PushController");
 
@@ -76,6 +80,10 @@ export default class PushController extends Component {
     }
 
     componentWillUnmount() {
+        if(Platform.OS === 'ios') {
+            return;
+        }
+        
         this.notificationListner.remove();
         this.refreshTokenListener.remove();
     }

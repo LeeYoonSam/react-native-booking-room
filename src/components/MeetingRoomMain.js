@@ -235,7 +235,7 @@ class MeetingRoomMain extends Component {
                     item.repeatType = book.repeatType;
                     item.memberInfo = book.memberInfo;
                 });
-                
+
                 // 리스트 세팅 (콜백에서 this.setState 를 사용하면 warning이 나서 따로 함수로 빼서 호출)
                 this.setBookDataSource(tempList);
             });
@@ -306,28 +306,28 @@ class MeetingRoomMain extends Component {
 
         if(selectRow.repeatType.id === "day" || selectRow.repeatType.id === "week") {
             BUTTONS = [
-                {name: '예약 전체 수정', action: 'action_update_all'},
-                {name: '현재 날짜만 수정', action: 'action_update_one'},
-                {name: '예약 전체 삭제', action: 'action_remove_all'},
-                {name: '현재 날짜만 삭제', action: 'action_remove_one'},
-                {name: '취소', action: 'action_cancle'},
+                {name: '예약 전체 수정', action: CommonConst.updateAll},
+                {name: '현재 날짜만 수정', action: CommonConst.updateOne},
+                {name: '예약 전체 삭제', action: CommonConst.removeAll},
+                {name: '현재 날짜만 삭제', action: CommonConst.removeOne},
+                {name: '취소', action: CommonConst.cancel},
             ];
         } else {
             BUTTONS = [
-                {name: '수정', action: 'action_update_one'},
-                {name: '삭제', action: 'action_remove_one'},
-                {name: '취소', action: 'action_cancle'},
+                {name: '수정', action: CommonConst.updateOne},
+                {name: '삭제', action: CommonConst.removeOne},
+                {name: '취소', action: CommonConst.cancel},
             ];
         }
 
-        console.log("getActionSheetList BUTTONS: " + BUTTONS);
+        // console.log("getActionSheetList BUTTONS: " + BUTTONS);
         return BUTTONS;
     }
 
     showActionSheet = (selectRow) => {
 
         var BUTTONS = this.getActionSheetList(selectRow);
-        console.log("showActionSheet BUTTONS: " + BUTTONS);
+        // console.log("showActionSheet BUTTONS: " + BUTTONS);
 
         var buttonNames = [];
 
@@ -335,7 +335,7 @@ class MeetingRoomMain extends Component {
             buttonNames.push(button.name);
         });
 
-        console.log("showActionSheet BUTTONS.name: " + buttonNames);
+        // console.log("showActionSheet BUTTONS.name: " + buttonNames);
 
         if(Platform.OS === 'ios') {
             ActionSheetIOS.showActionSheetWithOptions({

@@ -211,6 +211,23 @@ class Database {
         });
     }
 
+    // 마이페이지에서 가져온 날짜/층/회의실/시간 의 데이터로 예약 데이터 가져오기 (프로미스 사용)
+    static getMatchBook(yymmdd, floor, roomID, beginTime) {
+        /*
+        ex) BookData/20170308/12/A/9/ =>
+        */
+        console.log("call getMatchBook");
+
+        return new Promise(function(resolve, reject){
+            let bookDetailPath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+            console.log("getMatchBook bookDetailPath: " + bookDetailPath);
+
+            firebase.database().ref().child(bookDetailPath).once("value", (snapshot) => {
+                resolve(snapshot.val());
+            });
+        })
+    }
+
     // 해당 예약이 요청한 유저와 일치하는지 확인
     static checkMatchUser(selectDateAry, floor, roomID, beginTime, callback) {
         /*
@@ -225,6 +242,7 @@ class Database {
             var yymmdd = selectDateAry[i];
 
             let bookListBasePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+
             let bookListCheckPath = `${bookListBasePath}/userID`;
             console.log("checkMatchUser bookListBasePath: " + bookListBasePath);
 
@@ -859,6 +877,29 @@ class Database {
     }
 
     // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
+    static getMyBookingPromise() {
+        try {
+            let myUid = Database.getAuthUid();
+            let today = CommonUtil.getTodayYYMMDD();
+
+            let userDataPath = `${rootUserInfo}${myUid}`;
+            console.log("getMyBooking userDataPath: " + userDataPath);
+
+            var userDataRef = firebase.database().ref(userDataPath);
+
+            return new Promise(function(resolve, reject){
+                userDataRef.orderByKey().startAt(today).on("value", function(snapshot) {
+                    resolve(snapshot);
+                });
+            });
+
+        } catch (error) {
+            console.log('getMyBooking error: ' + error.toString())
+            callback(null);
+        }
+    }
+
+    // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
     static getMyBooking(callback) {
         try {
             console.log("call getMyBooking");
@@ -876,11 +917,68 @@ class Database {
 
             userDataRef.orderByKey().startAt(today).on("value", function(snapshot) {
 
-                // BookingModel을 만들어서 재활용
-                var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
-                tmpBookingModel.setUserID(snapshot.key).setSubObject(snapshot);
+                var allBookPath = [];
 
-                callback(tmpBookingModel);
+                snapshot.forEach( (yymmdd) => {
+
+                    var yymmddKey;
+                    var floorKey;
+                    var roomIDKey;
+                    var beginTimeKey;
+
+                    // console.log("getBookingList yymmdd: " + Object.values(yymmdd));
+                    yymmddKey = yymmdd.getKey();
+
+                    yymmdd.forEach( (floor) => {
+
+                        // console.log("getBookingList floor: " + Object.values(floor));
+                        floorKey = floor.getKey();
+
+                        floor.forEach( (roomID) => {
+
+                            // console.log("getBookingList roomID: " + Object.values(roomID));
+                            roomIDKey = roomID.getKey();
+
+                            roomID.forEach( (beginTime) => {
+
+                                // console.log("getBookingList beginTime: " + Object.values(beginTime));
+                                beginTimeKey = beginTime.getKey();
+                            })
+                        })
+                    });
+
+                    var bookParams = {
+                        yymmddKey: yymmddKey,
+                        floorKey: floorKey,
+                        roomIDKey: roomIDKey,
+                        beginTimeKey: beginTimeKey,
+                        date: `${ yymmddKey.substr(0,4) }. ${ yymmddKey.substr(4,2) }. ${ yymmddKey.substr(6,2) }`
+                    };
+                    console.log("bookParams: " + bookParams);
+
+                    allBookPath.push(bookParams)
+                });
+
+                console.log("allBookPath: " + allBookPath);
+                var myBooks = [];
+                allBookPath.map( (bookParams) => {
+                    new Promise(resolve => {
+                        resolve(Database.getMatchBook(bookParams.yymmddKey, bookParams.floorKey, bookParams.roomIDKey, bookParams.beginTimeKey));
+                    }).then( (bookDatas) => {
+                        console.log("bookDatas: " + bookDatas);
+                        bookDatas.yymmdd = bookParams.yymmddKey;
+                        bookDatas.beginTime = bookParams.beginTimeKey;
+                        bookDatas.floor = bookParams.floorKey;
+                        bookDatas.roomID = bookParams.roomIDKey;
+                        bookDatas.date = bookParams.date;
+                        myBooks.push(bookDatas);
+                    });
+                });
+
+                setTimeout(() => {
+                    console.log("Firebase getMyBooking myBooks: " + myBooks);
+                    callback(myBooks);
+                }, 1000);
             });
 
             // // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===

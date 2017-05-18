@@ -137,19 +137,20 @@ module.exports = backAndroid(React.createClass({
 
         return (
             <View style={ styles.container}>
+
                 <PushController
                     onChangeToken={token => this.setState({token: token || ""}, () => {
 
                         // 내부 저장소에 토큰 저장
                         AsyncStorage.setItem("pushToken", this.state.token);
-                    })} />
+                })} />
 
-                    <Navigator
-                        style={ styles.container }
-                        initialRoute={ {name: this.state.initialView} } // 네비게이션 최상위 뷰 설정
-                        renderScene={this.renderScene}                  // 화면 렌더링
-                        configureScene={ this._configureScene }         // 화면 설정
-                        />
+                <Navigator
+                    style={ styles.container }
+                    initialRoute={ {name: this.state.initialView} } // 네비게이션 최상위 뷰 설정
+                    renderScene={this.renderScene}                  // 화면 렌더링
+                    configureScene={ this._configureScene }         // 화면 설정
+                    />
             </View>
         );
     }

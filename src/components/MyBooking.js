@@ -20,6 +20,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import fbDB from '../firebase/Database';
 
 import CommonUtil from '../util/CommonUtil';
+import BookUpdateRemoveUtil from '../util/BookUpdateRemoveUtil';
 
 import StatusBar from './StatusBar';
 import Loading from "./Loading";
@@ -110,6 +111,8 @@ var styles = StyleSheet.create({
     },
 });
 
+var meetingRoomInfo;
+
 class MyBooking extends Component {
 
     handleHardwareBackPress() {
@@ -140,6 +143,8 @@ class MyBooking extends Component {
         this.setState({
             dataSource: this.state.ds.cloneWithRows(this.state.bookingDatas)
         });
+
+        meetingRoomInfo = fbDB.getAllMeetingRoom();
     }
 
     componentDidMount() {
@@ -168,75 +173,12 @@ class MyBooking extends Component {
         this.setState({
             showProgress: true,
         }, () => {
-
-            var tmpBookingLists = [];
-
             try {
-                fbDB.getMyBooking( (bookingData) => {
+                fbDB.getMyBooking((myBooks) => {
 
-                    // 데이터를 가져올때 기존 데이터와 갯수가 같으면 리스트 세팅 안함
-                    if(bookingData === undefined || bookingData.booking === null) {
-                        this.stopProgress();
-                        return;
-                    }
-
-                    if(bookingData.booking.length === this.state.bookingDatas.length) {
-                        this.stopProgress();
-                        return;
-                    }
-
-                    var tempList = tmpBookingLists.slice();
-
-                    var bookingObj = bookingData.booking;
-                    for(var bookKey in bookingObj) {
-                        if(bookingObj.hasOwnProperty(bookKey)) {
-
-                        }
-                        // 쓰레기 데이터, 파이어베이스 뒷부분 사용하지 않음.
-                        if(bookingObj[bookKey] === undefined) {
-                            continue;
-                        }
-
-                        var tmpFloor = bookingObj[bookKey];
-
-                        for(var floorKey in tmpFloor) {
-                            // 쓰레기 데이터, 파이어베이스 뒷부분 사용하지 않음.
-                            if(tmpFloor[floorKey] === undefined) {
-                                continue;
-                            }
-
-                            var tmpRoom = tmpFloor[floorKey];
-
-                            for(var roomKey in tmpRoom) {
-
-                                // 쓰레기 데이터, 파이어베이스 뒷부분 사용하지 않음.
-                                if(tmpRoom[roomKey] === undefined) {
-                                    continue;
-                                }
-
-                                var tmpTime = tmpRoom[roomKey];
-                                // console.log("getBookingList tmpTime: " + JSON.stringify(tmpTime));
-
-                                for(beginTime in tmpTime) {
-                                    if(tmpTime.hasOwnProperty(beginTime)) {
-                                        var tempBooking = {};
-                                        tempBooking.beginTime = beginTime;
-                                        tempBooking.yymmdd = bookKey;
-                                        tempBooking.floor = floorKey;
-                                        tempBooking.roomID = roomKey;
-                                        tempBooking.date = `${ bookKey.substr(0,4) }. ${ bookKey.substr(4,2) }. ${ bookKey.substr(6,2) }`;
-                                        // console.log("getBookingList tempBooking: " + Object.values(tempBooking));
-
-                                        tempList.push(tempBooking);
-                                    }
-                                }
-                            }
-                        }
-
-                        tmpBookingLists = tempList;
-                    }
-                    this.setPlaceRoom(tmpBookingLists);
-                    // this.setDisplay(tmpBookingLists);
+                    var _myBook = myBooks;
+                    console.log("myBooks: " + _myBook);
+                    this.setPlaceRoom(_myBook);
                 });
             } catch(error) {
                 this.setState({
@@ -250,13 +192,10 @@ class MyBooking extends Component {
 
     // 회의실 이름 가져와서 배열 재가공
     setPlaceRoom(tmpBookingLists) {
-
-        var meetingRoomInfo = fbDB.getAllMeetingRoom();
-        // console.log("setPlaceRoom meetingRoomInfo: " + Object.values(meetingRoomInfo));
-
         var reWorkList = [];
-
         tmpBookingLists.map((book) => {
+            console.log("tmpBookingLists book: " + Object.values(book));
+
             var tmpInfo = meetingRoomInfo[book.floor][book.roomID];
             // console.log("setPlaceRoom getBookData: " + Object.values(tmpInfo));
 
@@ -289,7 +228,23 @@ class MyBooking extends Component {
     }
 
     onClickBook(rowData) {
+        /*
+        1. OS 따라 팝업 띄우기
+            수정, 삭제 등
+        2. 수정, 삭제에 따라 진행
+            2-1. 수정시 예약화면으로 화면이동
+            2-2. 삭제시 DB 데이터 삭제 후 새로고침
+        */
 
+        // 내가 쓴글일때 수정/삭제 팝업 보여줌
+        if(rowData.userID === fbDB.getAuthUid()) {
+            console.log("내가쓴글!! 수정 팝업 보여주자!!");
+            var actionSheetUtil = new BookUpdateRemoveUtil(rowData, this.props.navigator);
+
+            return;
+        }
+
+        // var actionSheetUtil = new BookUpdateRemoveUtil(rowData, this.props.navigator);
     }
 
     onMoveBook() {
@@ -332,8 +287,9 @@ class MyBooking extends Component {
                         <Text style={styles.rowTimeText}>{`${rowData.beginTime} 시`}</Text>
                     </View>
                     <View style={styles.rowMemoContainer}>
-                        <Text style={styles.rowDate}>{rowData.date}</Text>
-                        <Text style={styles.rowPlace}>{rowData.placeName}</Text>
+                        <Text style={styles.rowDate}>{`${rowData.date} / ${rowData.placeName}`}</Text>
+                        <Text style={styles.rowPlace}>{rowData.bookMemo}</Text>
+
                     </View>
                 </View>
 

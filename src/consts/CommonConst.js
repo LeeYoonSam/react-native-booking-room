@@ -36,5 +36,13 @@ module.exports = {
       type_write: 0,
       type_update_all: 1,
       type_update_one: 2,
+  },
+
+  BOOK_ACTION: {
+      updateOne: 'action_update_one',
+      updateAll: 'action_update_all',
+      removeOne: 'action_remove_one',
+      removeAll: 'action_remove_all',
+      cancel: 'action_cancel'
   }
 };

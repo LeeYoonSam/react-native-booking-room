@@ -600,9 +600,13 @@ class BookRoom extends Component {
                     users.push(this.state.memberObj.owner);
                     // users.push(this.state.memberObj.members);
 
-                    this.state.memberObj.members.map((userID) => {
-                        users.push(userID);
-                    });
+                    try {
+                        this.state.memberObj.members.map((userID) => {
+                            users.push(userID);
+                        });
+                    } catch(error) {
+                        console.log(error);
+                    }
 
                     console.log("listenUpdateBook users: " + users);
 
@@ -677,9 +681,13 @@ class BookRoom extends Component {
                     users.push(this.state.memberObj.owner);
                     // users.push(this.state.memberObj.members);
 
-                    this.state.memberObj.members.map((userID) => {
-                        users.push(userID);
-                    });
+                    try {
+                        this.state.memberObj.members.map((userID) => {
+                            users.push(userID);
+                        });
+                    } catch(error) {
+                        console.log(error);
+                    }
 
                     console.log("listenUpdateBook users: " + users);
 
