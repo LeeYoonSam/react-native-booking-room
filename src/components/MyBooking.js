@@ -59,8 +59,14 @@ var styles = StyleSheet.create({
     },
 
     rowTimeContainer: {
+        // width: 60,
+        // height: 40,
+        // justifyContent: 'center',
+        // alignItems: 'center',
+
         width: 60,
-        height: 40,
+        height: 60,
+        borderRadius: 60/2,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -78,7 +84,7 @@ var styles = StyleSheet.create({
 
     rowTimeText: {
         fontSize: 24,
-        color: 'cornflowerblue',
+        color: 'white',
     },
 
     rowDate: {
@@ -172,6 +178,7 @@ class MyBooking extends Component {
     getBookingList() {
         this.setState({
             showProgress: true,
+            bookingDatas: []
         }, () => {
             try {
                 fbDB.getMyBooking((myBooks) => {
@@ -192,22 +199,27 @@ class MyBooking extends Component {
 
     // 회의실 이름 가져와서 배열 재가공
     setPlaceRoom(tmpBookingLists) {
-        var reWorkList = [];
-        tmpBookingLists.map((book) => {
-            console.log("tmpBookingLists book: " + Object.values(book));
+        try {
+            var reWorkList = [];
+            tmpBookingLists.map((book) => {
+                console.log("tmpBookingLists book: " + Object.values(book));
 
-            var tmpInfo = meetingRoomInfo[book.floor][book.roomID];
-            // console.log("setPlaceRoom getBookData: " + Object.values(tmpInfo));
+                var tmpInfo = meetingRoomInfo[book.floor][book.roomID];
+                // console.log("setPlaceRoom getBookData: " + Object.values(tmpInfo));
 
-            var placeName = `${book.floor}층 ${tmpInfo.name}`;
-            // console.log("setPlaceRoom placeName: " + placeName);
+                var placeName = `${book.floor}층 ${tmpInfo.name}`;
+                // console.log("setPlaceRoom placeName: " + placeName);
 
-            book.placeName = placeName;
+                book.placeName = placeName;
 
-            reWorkList.push(book);
-        });
+                reWorkList.push(book);
+            });
 
-        this.setDisplay(reWorkList);
+            this.setDisplay(reWorkList);
+        } catch (error) {
+            console.log("setPlaceRoom error" + error);
+            this.stopProgress();
+        }
     }
 
     setDisplay(tmpBookingLists) {
@@ -216,9 +228,9 @@ class MyBooking extends Component {
         this.setState({
             dataSource: this.state.ds.cloneWithRows(tmpBookingLists),
             bookingDatas: tmpBookingLists,
-        }, ()=> {
-            this.stopProgress();
         });
+
+        this.stopProgress();
     }
 
     stopProgress() {
@@ -228,14 +240,6 @@ class MyBooking extends Component {
     }
 
     onClickBook(rowData) {
-        /*
-        1. OS 따라 팝업 띄우기
-            수정, 삭제 등
-        2. 수정, 삭제에 따라 진행
-            2-1. 수정시 예약화면으로 화면이동
-            2-2. 삭제시 DB 데이터 삭제 후 새로고침
-        */
-
         // 내가 쓴글일때 수정/삭제 팝업 보여줌
         if(rowData.userID === fbDB.getAuthUid()) {
             console.log("내가쓴글!! 수정 팝업 보여주자!!");
@@ -243,8 +247,6 @@ class MyBooking extends Component {
 
             return;
         }
-
-        // var actionSheetUtil = new BookUpdateRemoveUtil(rowData, this.props.navigator);
     }
 
     onMoveBook() {
@@ -277,14 +279,20 @@ class MyBooking extends Component {
         // console.log("renderMyBook rowData: " + Object.values(rowData));
         // console.log("renderMyBook rowData.key: " + rowData.yymmdd);
 
+        var isMineColor = 'cornflowerblue';
+        if(rowData.userID === fbDB.getAuthUid()) {
+            // isMine = <Icon name='cube' size={15} color={'blue'} />
+            isMineColor = 'firebrick';
+        }
+
         return (
             <TouchableHighlight
                 underlayColor={'transparent'}
                 onPress={() => this.onClickBook(rowData)}>
 
                 <View style={styles.rowContainer}>
-                    <View style={styles.rowTimeContainer}>
-                        <Text style={styles.rowTimeText}>{`${rowData.beginTime} 시`}</Text>
+                    <View style={[styles.rowTimeContainer, {backgroundColor: isMineColor}]}>
+                        <Text style={styles.rowTimeText}>{`${rowData.beginTime}시`}</Text>
                     </View>
                     <View style={styles.rowMemoContainer}>
                         <Text style={styles.rowDate}>{`${rowData.date} / ${rowData.placeName}`}</Text>

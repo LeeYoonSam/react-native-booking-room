@@ -8,6 +8,8 @@ import {
 import RNBottomSheet from 'react-native-bottom-sheet';
 
 import fbDB from '../firebase/Database';
+import FirebaseClient from "../firebase/FirebaseClient";
+
 import CommonConst from '../consts/CommonConst';
 
 import CommonUtil from './CommonUtil';
@@ -182,31 +184,36 @@ export default class BookUpdateRemoveUtil {
     // 해당 예약의 groupID 찾고 / 완전한 path를 만들어서 미리 세팅 - ex) yymmdd/floor/roomID/beginTime
     // 추후에 '일괄 수정'시 repeatDates와 변경된 내용을 같이 보내서 FB DB에 삽입 처리
     getRepeatList(selectRow, isRemoveAll) {
-        // 전체 삭제
-        if(isRemoveAll) {
-            console.log("call getRepeatList 전체 삭제" );
+        try {
+            // 전체 삭제
+            if(isRemoveAll) {
+                console.log("call getRepeatList 전체 삭제" );
 
-            fbDB.searchGroupId(selectRow.groupID, (groupData) => {
+                fbDB.searchGroupId(selectRow.groupID, (groupData) => {
 
-                repeatDates = groupData.selectedTimes;
-                repeatUsers = groupData.selectedUsers;
+                    repeatDates = groupData.selectedTimes;
+                    repeatUsers = groupData.selectedUsers;
 
-                this.fbDeleteBooking(selectRow.groupID, isRemoveAll);
-            });
-        }
-        // 개별 삭제
-        else {
-            console.log("call getRepeatList 개별 삭제" );
+                    this.fbDeleteBooking(selectRow.groupID, isRemoveAll);
+                });
+            }
+            // 개별 삭제
+            else {
+                console.log("call getRepeatList 개별 삭제" );
 
-            fbDB.searchGroupId(selectRow.groupID, (groupData) => {
+                fbDB.searchGroupId(selectRow.groupID, (groupData) => {
 
-                var tmpDates = {"0": `${selectRow.yymmdd}/${selectRow.floor}/${selectRow.roomID}/${selectRow.beginTime}`};
+                    var tmpDates = {"0": `${selectRow.yymmdd}/${selectRow.floor}/${selectRow.roomID}/${selectRow.beginTime}`};
 
-                repeatDates = tmpDates;
-                repeatUsers = groupData.selectedUsers;
+                    repeatDates = tmpDates;
+                    repeatUsers = groupData.selectedUsers;
 
-                this.fbDeleteBooking(selectRow.groupID, isRemoveAll);
-            });
+                    this.fbDeleteBooking(selectRow.groupID, isRemoveAll);
+                });
+            }
+        } catch (error) {
+            console.log(error);
+            Alert.alert('오류로 인하여 삭제가 실패 했습니다.');
         }
     }
 
@@ -216,10 +223,6 @@ export default class BookUpdateRemoveUtil {
         fbDB.checkAndDeleteMatchUser(repeatDates, repeatUsers, isRemoveAll, (isSuccess) => {
             // 삭제 완료
             if(isSuccess) {
-                Alert.alert('삭제가 완료 되었습니다.');
-
-                // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
-                DeviceEventEmitter.emit('refreshMyBooking', {});
 
                 if(groupID !== undefined) {
                     if(isRemoveAll) {
@@ -228,6 +231,82 @@ export default class BookUpdateRemoveUtil {
                         fbDB.removeOneBookingGroup(groupID, selectRow.yymmdd);
                     }
                 }
+
+                // 예약된 멤버들에게 즉시 푸시발송 - 메시지 세팅해야함
+                var users = [];
+                console.log("start immediate push");
+                users.push(repeatUsers.owner);
+                if(repeatUsers.members !== undefined) {
+                    for(var key in repeatUsers.members) {
+                        users.push(repeatUsers.members[key]);
+                    }
+                }
+
+                console.log("fbDeleteBooking users: " + users);
+
+                // users.push(repeatUsers.owner);
+                // // users.push(this.state.memberObj.members);
+                //
+                // try {
+                //     repeatUsers.members.map((userID) => {
+                //         console.log(userID);
+                //         users.push(userID);
+                //     });
+                // } catch(error) {
+                //     console.log(error);
+                // }
+
+                fbDB.getUserPushTokens(users, (tokens) => {
+                    console.log("fbDeleteBooking tokens: " + tokens);
+
+                    if(tokens.length > 0) {
+                        var pushDate = '';
+
+                        if(repeatDates.length > 1) {
+                            var tmpDate = repeatDates[0];
+                            var year = tmpDate.substring(0,4);
+                            var month = tmpDate.substring(4,6);
+                            var day = tmpDate.substring(6,8);
+
+                            var tmpStartDate = `${year}년 ${month}월 ${day}일`
+
+                            tmpDate = repeatDates[repeatDates.length -1];
+                            year = tmpDate.substring(0,4);
+                            month = tmpDate.substring(4,6);
+                            day = tmpDate.substring(6,8);
+
+                            var tmpEndDate = `${year}년 ${month}월 ${day}일`
+
+                            pushDate = `${tmpStartDate}~${tmpEndDate}`;
+                        } else {
+                            var tmpDate = repeatDates[0];
+                            var year = tmpDate.substring(0,4);
+                            var month = tmpDate.substring(4,6);
+                            var day = tmpDate.substring(6,8);
+
+                            var tmpStartDate = `${year}년 ${month}월 ${day}일`
+                            pushDate = `${tmpStartDate}`;
+                        }
+
+                        var pushTitle = `${selectRow.floor}층 ${selectRoomData.roomTitle} 예약취소`;
+                        var pushContent = `${pushDate} ${selectRow.beginTime}시에 예약이 취소 되었습니다.`;
+                        FirebaseClient.sendData(tokens, pushTitle, pushContent);
+                    }
+                });
+
+                Alert.alert(
+                    '',
+                    '예약이 삭제 되었습니다.',
+                    [
+                        { text: '확인', onPress: () =>
+                            {
+                                // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
+                                DeviceEventEmitter.emit('refreshMyBooking', {});
+                            }
+                        },
+                    ],
+                    { cancelable: false }
+                );
 
             } else {
                 console.log("call failed" );

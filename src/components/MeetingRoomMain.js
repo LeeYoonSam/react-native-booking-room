@@ -17,6 +17,8 @@ import RNBottomSheet from 'react-native-bottom-sheet';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 import fbDB from '../firebase/Database';
+import FirebaseClient from "../firebase/FirebaseClient";
+
 import CommonUtil from '../util/CommonUtil';
 
 import ParallaxScrollView from 'react-native-parallax-scroll-view';
@@ -179,6 +181,7 @@ class MeetingRoomMain extends Component {
                     this.setState({
                         repeatDates: groupData.selectedTimes,
                         repeatUsers: groupData.selectedUsers,
+                        repeatBeginTime: rowData.beginTime,
                     }, () => {
                         console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
                         this.fbDeleteBooking(rowData.groupID, isRemoveAll);
@@ -196,6 +199,7 @@ class MeetingRoomMain extends Component {
                     this.setState({
                         repeatDates: tmpDates,
                         repeatUsers: groupData.selectedUsers,
+                        repeatBeginTime: rowData.beginTime,
                     }, () => {
                         console.log("getRepeatList convert path: " + Object.values(this.state.repeatDates));
                         this.fbDeleteBooking(rowData.groupID, isRemoveAll);
@@ -306,17 +310,17 @@ class MeetingRoomMain extends Component {
 
         if(selectRow.repeatType.id === "day" || selectRow.repeatType.id === "week") {
             BUTTONS = [
-                {name: '예약 전체 수정', action: CommonConst.updateAll},
-                {name: '현재 날짜만 수정', action: CommonConst.updateOne},
-                {name: '예약 전체 삭제', action: CommonConst.removeAll},
-                {name: '현재 날짜만 삭제', action: CommonConst.removeOne},
-                {name: '취소', action: CommonConst.cancel},
+                {name: '예약 전체 수정', action: CommonConst.BOOK_ACTION.updateAll},
+                {name: '현재 날짜만 수정', action: CommonConst.BOOK_ACTION.updateOne},
+                {name: '예약 전체 삭제', action: CommonConst.BOOK_ACTION.removeAll},
+                {name: '현재 날짜만 삭제', action: CommonConst.BOOK_ACTION.removeOne},
+                {name: '취소', action: CommonConst.BOOK_ACTION.cancel},
             ];
         } else {
             BUTTONS = [
-                {name: '수정', action: CommonConst.updateOne},
-                {name: '삭제', action: CommonConst.removeOne},
-                {name: '취소', action: CommonConst.cancel},
+                {name: '수정', action: CommonConst.BOOK_ACTION.updateOne},
+                {name: '삭제', action: CommonConst.BOOK_ACTION.removeOne},
+                {name: '취소', action: CommonConst.BOOK_ACTION.cancel},
             ];
         }
 
@@ -367,12 +371,12 @@ class MeetingRoomMain extends Component {
         var buttonAction = BUTTONS[buttonIndex].action;
 
         switch (buttonAction) {
-            case "action_cancle":
+            case CommonConst.BOOK_ACTION.cancel:
                 console.log("취소");
             break;
 
             // 전체 수정
-            case "action_update_all":
+            case CommonConst.BOOK_ACTION.updateAll:
                 console.log("전체 수정");
                 // 팝업 띄우기
                 this.props.navigator.push({
@@ -389,7 +393,7 @@ class MeetingRoomMain extends Component {
             break;
 
             // 개별 수정
-            case "action_update_one":
+            case CommonConst.BOOK_ACTION.updateOne:
                 console.log("개별 수정");
                 // 팝업 띄우기
                 this.props.navigator.push({
@@ -406,7 +410,7 @@ class MeetingRoomMain extends Component {
             break;
 
             // 전체 삭제
-            case "action_remove_all":
+            case CommonConst.BOOK_ACTION.removeAll:
                 console.log("전체 삭제");
                 Alert.alert(
                     '',
@@ -418,7 +422,7 @@ class MeetingRoomMain extends Component {
                 break;
 
             // 개별 삭제
-            case "action_remove_one":
+            case CommonConst.BOOK_ACTION.removeOne:
                 console.log("개별 삭제");
                 Alert.alert(
                     '',
@@ -450,11 +454,8 @@ class MeetingRoomMain extends Component {
 
             // 삭제 완료
             if(isSuccess) {
-                console.log("call success" );
-                Alert.alert('삭제가 완료 되었습니다.');
-
-                // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
-                DeviceEventEmitter.emit('refreshMyBooking', {});
+                // console.log("call success" );
+                // Alert.alert('삭제가 완료 되었습니다.');
 
                 if(groupID !== undefined) {
                     if(isRemoveAll) {
@@ -465,7 +466,78 @@ class MeetingRoomMain extends Component {
                 }
 
                 // 다시 불러오기
-                this.getBookList();
+                // this.getBookList();
+
+                // 예약된 멤버들에게 즉시 푸시발송 - 메시지 세팅해야함
+                var users = [];
+                console.log("start immediate push");
+                users.push(this.state.repeatUsers.owner);
+                if(this.state.repeatUsers.members !== undefined) {
+                    for(var key in this.state.repeatUsers.members) {
+                        users.push(this.state.repeatUsers.members[key]);
+                    }
+                }
+
+                console.log("fbDeleteBooking users: " + users);
+
+                fbDB.getUserPushTokens(users, (tokens) => {
+                    console.log("fbDeleteBooking tokens: " + tokens);
+
+                    if(tokens.length > 0) {
+                        var pushDate = '';
+
+                        if(this.state.repeatDates.length > 1) {
+                            var tmpDate = this.state.repeatDates[0];
+                            var year = tmpDate.substring(0,4);
+                            var month = tmpDate.substring(4,6);
+                            var day = tmpDate.substring(6,8);
+
+                            var tmpStartDate = `${year}년 ${month}월 ${day}일`
+
+                            tmpDate = this.state.repeatDates[this.state.repeatDates.length -1];
+                            year = tmpDate.substring(0,4);
+                            month = tmpDate.substring(4,6);
+                            day = tmpDate.substring(6,8);
+
+                            var tmpEndDate = `${year}년 ${month}월 ${day}일`
+
+                            pushDate = `${tmpStartDate}~${tmpEndDate}`;
+                        } else {
+                            var tmpDate = this.state.repeatDates[0];
+                            var year = tmpDate.substring(0,4);
+                            var month = tmpDate.substring(4,6);
+                            var day = tmpDate.substring(6,8);
+
+                            var tmpStartDate = `${year}년 ${month}월 ${day}일`
+                            pushDate = `${tmpStartDate}`;
+                        }
+
+                        var meetingRoomInfo = fbDB.getAllMeetingRoom();
+                        var roomName = meetingRoomInfo[this.props.selectFloor][this.props.selectRoomData.roomID].name;
+
+                        var pushTitle = `${this.props.selectFloor}층 ${roomName} 예약취소`;
+                        var pushContent = `${pushDate} ${this.state.repeatBeginTime}시에 예약이 취소 되었습니다.`;
+                        FirebaseClient.sendData(tokens, pushTitle, pushContent);
+                    }
+                });
+
+                Alert.alert(
+                    '',
+                    '예약이 삭제 되었습니다.',
+                    [
+                        { text: '확인', onPress: () =>
+                            {
+                                // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
+                                DeviceEventEmitter.emit('refreshMyBooking', {});
+
+                                // 예약이 완료되면 최상단 마이페이지로 보내기
+                                var routes = this.props.navigator.getCurrentRoutes();
+                                this.props.navigator.popToRoute(routes[1]);
+                            }
+                        },
+                    ],
+                    { cancelable: false }
+                );
 
             } else {
                 console.log("call failed" );

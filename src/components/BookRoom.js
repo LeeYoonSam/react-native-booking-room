@@ -592,7 +592,7 @@ class BookRoom extends Component {
             fbDB.listenUpdateBook(this.props.updateType, selectDateAry, this.props.selectData.memberInfo, this.state.memberObj, this.props.selectFloor, this.props.selectRoomData.roomID, this.props.selectTime, this.props.selectTime + 1, repeatType, this.state.bookType, this.state.bookMemo, this.props.selectData.groupID, (isSuccess) => {
                 // 예약 완료
                 if(isSuccess) {
-                    Alert.alert('예약이 수정 되었습니다.');
+                    // Alert.alert('예약이 수정 되었습니다.');
 
                     // 예약된 멤버들에게 즉시 푸시발송 - 메시지 세팅해야함
                     var users = [];
@@ -612,6 +612,7 @@ class BookRoom extends Component {
 
                     fbDB.getUserPushTokens(users, (tokens) => {
                         console.log("listenUpdateBook tokens: " + tokens);
+
                         if(tokens.length > 0) {
                             var pushDate = '';
 
@@ -645,22 +646,32 @@ class BookRoom extends Component {
                             var roomName = meetingRoomInfo[this.props.selectFloor][this.props.selectRoomData.roomID].name;
 
                             var pushTitle = `${this.props.selectFloor}층 ${roomName} ${this.state.bookType.name} 예약`;
-                            var pushContent = `${pushDate} ${this.props.selectTime}시에 예약 되었습니다.`;
+                            var pushContent = `${pushDate} ${this.props.selectTime}시 예약이 수정 되었습니다.`;
                             FirebaseClient.sendData(tokens, pushTitle, pushContent);
                         }
-
-
-                        // tokens.map( (token) => {
-                        //     console.log("listenUpdateBook token: " + token);
-                        //
-                        //     FirebaseClient.sendData(token);
-                        //
-                        //     // setTimeout(FirebaseClient.sendData(token), 1000);
-                        // });
                     });
 
-                    this.dismissProgress();
-                    this.onBackPress();
+                    Alert.alert(
+                        '',
+                        '예약이 수정 되었습니다.',
+                        [
+                            { text: '확인', onPress: () =>
+                                {
+                                    var routes = this.props.navigator.getCurrentRoutes();
+
+                                    // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
+                                    DeviceEventEmitter.emit('refreshMyBooking', {});
+
+                                    // 예약이 완료되면 최상단 마이페이지로 보내기
+                                    this.props.navigator.popToRoute(routes[1]);
+                                }
+                            },
+                        ],
+                        { cancelable: false }
+                    );
+
+                    // this.dismissProgress();
+                    // this.onBackPress();
                 } else {
                     Alert.alert('수정 실패. 다시 시도해주세요.');
                     this.dismissProgress();
@@ -743,12 +754,11 @@ class BookRoom extends Component {
                         [
                             { text: '확인', onPress: () =>
                                 {
-                                    var routes = this.props.navigator.getCurrentRoutes();
-
                                     // 마이페이지 새로고침이 되지 않아 DeviceEventEmitter 사용해서 호출
                                     DeviceEventEmitter.emit('refreshMyBooking', {});
 
                                     // 예약이 완료되면 최상단 마이페이지로 보내기
+                                    var routes = this.props.navigator.getCurrentRoutes();
                                     this.props.navigator.popToRoute(routes[1]);
                                 }
                             },
@@ -824,42 +834,6 @@ class BookRoom extends Component {
                             <Text style={[styles.bookPointText, CommonStyle.textStyleMainColor]}>{`${this.props.selectDate} / ${this.props.selectTime} ~ ${this.props.selectTime + 1}시`}</Text>
                         </View>
 
-
-                        <View style={styles.separatedLine} />
-                        <View style={styles.viewContainer}>
-                            <View style={styles.iconWithSection}>
-                                <Icon name='users' size={iconSize} color={iconColor} />
-                                <Text style={styles.bookSectionText}>회의 참석자</Text>
-                            </View>
-                            <TouchableWithoutFeedback onPress={() => {this.moveUserList(this.state.memberObj.members)}}>
-                                <View style={{backgroundColor: '#50829b', alignItems: 'stretch', borderRadius: 4, margin: 10, padding: 10}}>
-                                    <Text
-                                        style={{fontSize: 16, fontWeight: "bold", color: 'azure'}}>
-                                        {this.state.userSearchTtile}
-                                    </Text>
-                                </View>
-                            </TouchableWithoutFeedback>
-
-                            {this.setSelectedUserUI()}
-                        </View>
-
-
-                        <View style={styles.separatedLine} />
-
-                        <View style={styles.viewContainer}>
-                            <View style={styles.iconWithSection}>
-                                <Icon name='pencil-square-o' size={iconSize} color={iconColor} />
-                            <Text style={styles.bookSectionText}>메모</Text>
-                            </View>
-                            <TextInput
-                                ref='memoInput'
-                                style={styles.input}
-                                value={this.state.bookMemo}
-                                onChangeText={(memo) => this.setState({bookMemo: memo})}
-                                placeholder={'간단하게 메모를 작성해주세요.'}
-                                multiline={true} />
-                        </View>
-
                         <View style={styles.separatedLine} />
 
                         <View style={styles.viewContainer}>
@@ -918,6 +892,41 @@ class BookRoom extends Component {
                                 }
                             </View>
 
+                        </View>
+
+                        <View style={styles.separatedLine} />
+                        <View style={styles.viewContainer}>
+                            <View style={styles.iconWithSection}>
+                                <Icon name='users' size={iconSize} color={iconColor} />
+                                <Text style={styles.bookSectionText}>회의 참석자</Text>
+                            </View>
+                            <TouchableWithoutFeedback onPress={() => {this.moveUserList(this.state.memberObj.members)}}>
+                                <View style={{backgroundColor: '#50829b', alignItems: 'stretch', borderRadius: 4, margin: 10, padding: 10}}>
+                                    <Text
+                                        style={{fontSize: 16, fontWeight: "bold", color: 'azure'}}>
+                                        {this.state.userSearchTtile}
+                                    </Text>
+                                </View>
+                            </TouchableWithoutFeedback>
+
+                            {this.setSelectedUserUI()}
+                        </View>
+
+
+                        <View style={styles.separatedLine} />
+
+                        <View style={styles.viewContainer}>
+                            <View style={styles.iconWithSection}>
+                                <Icon name='pencil-square-o' size={iconSize} color={iconColor} />
+                            <Text style={styles.bookSectionText}>메모</Text>
+                            </View>
+                            <TextInput
+                                ref='memoInput'
+                                style={styles.input}
+                                value={this.state.bookMemo}
+                                onChangeText={(memo) => this.setState({bookMemo: memo})}
+                                placeholder={'간단하게 메모를 작성해주세요.'}
+                                multiline={true} />
                         </View>
 
                     </View>

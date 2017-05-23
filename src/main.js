@@ -47,7 +47,9 @@ module.exports = backAndroid(React.createClass({
         // Firebase.initialise();
 
         this.getInitialView();
+    },
 
+    componentDidMount: function() {
         // 앱 시작시 회의실 목록 받아오기
         fbDB.getAllMeetingRoomList();
     },

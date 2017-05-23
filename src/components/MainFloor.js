@@ -5,27 +5,30 @@ import {
     Image,
     ListView,
     ScrollView,
+    Alert,
     TouchableHighlight,
     TouchableOpacity,
     Dimensions,
     StyleSheet
 } from 'react-native';
 
+import CachedImage from 'react-native-cached-image';
 import { hardwareBackPress } from 'react-native-back-android';
-
-import NaviBar from './NaviBar';
-
 import ScrollableTabView, { ScrollableTabBar, } from 'react-native-scrollable-tab-view';
-import fbDB from '../firebase/Database';
 
-import FloorTabBar from './FloorTabBar';
+import fbDB from '../firebase/Database';
+import fbStorage from '../firebase/Storage';
 
 import SecretText from "../consts/SecretText";
 
+import NaviBar from './NaviBar';
+import FloorTabBar from './FloorTabBar';
 import Loading from "./Loading";
 
-
 const window = Dimensions.get('window');
+
+// placeholder 기본 이미지
+const placeholder = require('../../public/images/placeholder.png');
 
 var styles = StyleSheet.create({
     container: {
@@ -50,10 +53,23 @@ var styles = StyleSheet.create({
         marginLeft: 10,
     },
 
+    subTitle: {
+        fontSize: 12,
+        color: 'white',
+        marginLeft: 10,
+    },
+
+    blockTitle: {
+        fontSize: 12,
+        color: 'red',
+        marginLeft: 10,
+    },
+
     titleBG: {
         backgroundColor:'gray',
+        flexDirection: 'column',
         opacity: 0.6,
-        width: window.width / 2 - 22,
+        width: window.width / 2,
     },
 
     tabView: {
@@ -65,23 +81,13 @@ var styles = StyleSheet.create({
 
     card: {
         borderWidth: 1,
-        backgroundColor: 'transparent',
         borderColor: 'rgba(0,0,0,0.1)',
-        marginTop: 10,
-        marginLeft: 12.5,
-        width: window.width / 2 - 20,
-
-        shadowColor: '#ccc',
-        shadowOffset: { width: 2, height: 2, },
-        shadowOpacity: 0.5,
-        shadowRadius: 3,
-
-        justifyContent: 'space-around',
+        width: window.width / 2 - 0.5,
     },
 
     roomBG: {
-        width:window.width / 2 - 22,
-        height: 210,
+        width:window.width / 2,
+        height: window.width / 2 * 1.5,
     },
 });
 
@@ -155,13 +161,14 @@ class MainFloor extends Component {
             for(roomKey in roomDatas) {
                 var roomInfo = roomDatas[roomKey];
 
-                // console.log("MainFloor getRoomList roomInfo: " + Object.values(roomInfo));
-
-                var rooms = roomLists.slice()
+                var rooms = roomLists.slice();
                 rooms.push({
                     roomID: roomKey,
                     roomTitle: roomInfo.name,
-                    roomImg: roomInfo.img
+                    imgURL: roomInfo.imgURL,
+                    available: roomInfo.available,
+                    availableMax: roomInfo.availableMax,
+                    availableMessage: roomInfo.availableMessage,
                 });
 
                 roomLists = rooms;
@@ -182,6 +189,19 @@ class MainFloor extends Component {
     onPressFloor = (roomData) => {
         // console.log("roomData: " + roomData);
 
+        if(!roomData.available) {
+            Alert.alert(
+                '예약불가',
+                roomData.availableMessage,
+                [
+                    { text: '확인' },
+                ],
+                { cancelable: false }
+            )
+
+            return;
+        }
+
         this.props.navigator.push({
             name: 'MeetingRoomMain',
             selectRoomData: roomData,
@@ -199,145 +219,33 @@ class MainFloor extends Component {
     }
 
     renderRoom(rowData) {
-        var bg;
+        var blockView;
 
-        switch (rowData.roomTitle) {
-            case "광주":
-            bg = <Image
-                source={require('../../public/images/12_Guangzhou.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-            case "상해":
-            bg = <Image
-                source={require('../../public/images/12_Shanghai.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "홍콩":
-            bg = <Image
-                source={require('../../public/images/12_Hongkong.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "심천":
-            bg = <Image
-                source={require('../../public/images/12_Shenzhen.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-
-            case "두바이":
-            bg = <Image
-                source={require('../../public/images/13_Dubai.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "싱가폴":
-            bg = <Image
-                source={require('../../public/images/13_Singapore.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "상파울로":
-            bg = <Image
-                source={require('../../public/images/13_Saopaulo.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "시드니":
-            bg = <Image
-                source={require('../../public/images/13_Sydney.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "도쿄":
-            bg = <Image
-                source={require('../../public/images/14_Tokyo.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "멕시코시티":
-            bg = <Image
-                source={require('../../public/images/14_Mexicocity.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "쿠알라룸푸르":
-            bg = <Image
-                source={require('../../public/images/14_Kualalumpur.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "성도":
-            bg = <Image
-                source={require('../../public/images/16_Chengdu.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "서안":
-            bg = <Image
-                source={require('../../public/images/16_Xian.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "북경":
-            bg = <Image
-                source={require('../../public/images/16_Beijing.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "심양":
-            bg = <Image
-                source={require('../../public/images/16_Shenyang.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "하얼빈":
-            bg = <Image
-                source={require('../../public/images/16_Haerbin.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            case "청도":
-            bg = <Image
-                source={require('../../public/images/16_Qingdao.jpg')}
-                style={styles.roomBG}
-                />
-            break;
-
-            default:
-
+        if(!rowData.available) {
+            blockView = <Text style={styles.blockTitle}>(예약 불가능)</Text>
         }
-
-    // console.log("bg: " + bg);
 
         return <TouchableHighlight
             style={styles.tabView}
             underlayColor={'transparent'}
             onPress={() => this.onPressFloor(rowData)}>
             <View style={styles.card}>
-                {bg}
+                <CachedImage
+                    source={{
+                        uri: rowData.imgURL
+                    }}
+                    style={styles.roomBG}
+                    defaultSource={placeholder}
+                />
                 <View style={styles.titleBG}>
+                    <View style={{flexDirection: 'row'}}>
+                        <Text style={styles.subTitle}>{`${rowData.availableMax}명 수용가능`}</Text>
+                        { blockView }
+                    </View>
+
                     <Text style={styles.title}>{rowData.roomTitle}</Text>
+
                 </View>
-
-
             </View>
         </TouchableHighlight>
     }
@@ -383,4 +291,9 @@ class MainFloor extends Component {
     }
 }
 
-module.exports = MainFloor;
+const handleBackButtonPress = ({ navigator }) => {
+    navigator.pop();
+    return true;
+};
+
+module.exports = hardwareBackPress(MainFloor, handleBackButtonPress);

@@ -147,7 +147,10 @@ class Database {
                 rooms.push({
                     roomID: child.key,
                     roomTitle: child.val().name,
-                    roomImg: child.val().img
+                    roomImg: child.val().img,
+                    available: child.val().available,
+                    availableMax: child.val().availableMax,
+                    availableMessage: child.val().availableMessage
                 });
 
                 roomLists = rooms;
@@ -158,11 +161,36 @@ class Database {
     }
 
     // 회의실 목록 통째로 가져오기
-    static getAllMeetingRoomList() {
-        firebase.database().ref().child(rootMeetingRoom).once('value', (snapshot) => {
-            ALL_MEETINGROOM = JSON.parse(JSON.stringify(snapshot));
+    static async getAllMeetingRoomList() {
 
-            console.log("getAllMeetingRoomList: " + Object.values(ALL_MEETINGROOM));
+
+        await firebase.database().ref().child(rootMeetingRoom).once('value', (snapshot) => {
+            ALL_MEETINGROOM = JSON.parse(JSON.stringify(snapshot));
+            console.log("getAllMeetingRoomList before: " + Object.values(ALL_MEETINGROOM));
+
+            snapshot.forEach( (floors) => {
+                console.log("getAllMeetingRoomList floors(obj): " + Object.values(floors));
+
+                floors.forEach( (rooms) => {
+                    console.log("getAllMeetingRoomList rooms(obj): " + Object.values(rooms));
+
+                    var imgURL;
+
+                    firebase.storage().ref().child(`${rootMeetingRoom}${rooms.val().img}`).getDownloadURL().then( function(url) {
+                        console.log("getAllMeetingRoomList imgURL: " + url);
+                        console.log("getAllMeetingRoomList floors.key: " + floors.key + " rooms.key: " + rooms.key);
+
+                        ALL_MEETINGROOM[floors.key][rooms.key].imgURL = url;
+                        console.log("getAllMeetingRoomList ALL_MEETINGROOM[floors.key][rooms.key].imgURL: " + ALL_MEETINGROOM[floors.key][rooms.key].imgURL);
+
+                    }).catch(function(error) {
+                        console.log("getAllMeetingRoomList 이미지 로드 오류: " + error);
+                    });
+
+                });
+            });
+
+            console.log("getAllMeetingRoomList after: " + Object.values(ALL_MEETINGROOM));
         });
     }
 
@@ -573,7 +601,25 @@ class Database {
                             }
 
                             if(allCount === checkCount) {
-                                console.log("유저 변경 없음")
+                                console.log("유저 변경 없음");
+
+                                // 유저변경이 없으면 기존 메모나 예약타입만 바뀌었어므로 그것만 변경하고 끝내기
+                                let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
+
+                                // firebase.database().ref(bookWritePath).push({
+                                firebase.database().ref(bookWritePath).set({
+                                    userID:firebase.auth().currentUser.uid,
+                                    userEmail:firebase.auth().currentUser.email,
+                                    groupID: groupID,
+                                    beginTime: beginTime,
+                                    endTime: endTime,
+                                    modifyDate: new Date(),
+                                    bookMemo: bookMemo,
+                                    bookType: bookType,
+                                    repeatType: repeatType,
+                                    memberInfo: memberObj,
+                                });
+
                                 callback(true);
 
                                 return;
@@ -630,7 +676,7 @@ class Database {
                 }
 
             } else {
-                selectDateAry.map ((yymmdd) => {
+                selectDateAry.map( (yymmdd) => {
                     console.log('listenWriteBook yymmdd: ' + yymmdd + ' floor: ' + floor + ' roomID: ' + roomID + ' beginTime: ' + beginTime + ' endTime: ' + endTime + ' repeatType: ' + repeatType + ' bookType: ' + bookType + ' bookMemo: ' + bookMemo);
 
                     let bookWritePath = `${rootBookData}${yymmdd}/${floor}/${roomID}/${beginTime}`;
@@ -648,67 +694,67 @@ class Database {
                         repeatType: repeatType,
                         memberInfo: memberObj,
                     });
+                });
 
-                    if(originMemberObj.owenr === memberObj.owenr) {
+                if(originMemberObj.owenr === memberObj.owenr) {
 
-                        console.log("setUserBookingData originMemberObj.members: " + originMemberObj.members);
-                        if(originMemberObj.members !== undefined)  {
-                            // 유저 정보 전체 갯수
-                            var allCount = originMemberObj.members.length;
-                            var newCount = memberObj.members.length;
+                    console.log("setUserBookingData originMemberObj.members: " + originMemberObj.members);
+                    if(originMemberObj.members !== undefined)  {
+                        // 유저 정보 전체 갯수
+                        var allCount = originMemberObj.members.length;
+                        var newCount = memberObj.members.length;
 
-                            // 기존 유저수와 다르면 무조건 '예약/노티/마이페이지' 유저 업데이트 진행
-                            if(allCount === newCount) {
-                                // 유저 매칭 갯수
-                                var checkCount = 0;
+                        // 기존 유저수와 다르면 무조건 '예약/노티/마이페이지' 유저 업데이트 진행
+                        if(allCount === newCount) {
+                            // 유저 매칭 갯수
+                            var checkCount = 0;
 
-                                for(var i = 0; i < allCount; i++) {
-                                    var checkOriginUserID = originMemberObj.members[i].userID;
+                            for(var i = 0; i < allCount; i++) {
+                                var checkOriginUserID = originMemberObj.members[i].userID;
 
-                                    for(var k = 0; k < newCount; k++) {
-                                        var checkNewUserID = memberObj.members[k].userID;
+                                for(var k = 0; k < newCount; k++) {
+                                    var checkNewUserID = memberObj.members[k].userID;
 
-                                        if(checkOriginUserID === checkNewUserID) {
-                                            checkCount ++;
-                                        }
+                                    if(checkOriginUserID === checkNewUserID) {
+                                        checkCount ++;
                                     }
                                 }
+                            }
 
-                                if(allCount === checkCount) {
-                                    console.log("유저 변경 없음")
-                                    callback(true);
+                            if(allCount === checkCount) {
+                                console.log("유저 변경 없음")
+                                callback(true);
 
-                                    return;
-                                }
+                                return;
                             }
                         }
-                        console.log("유저 변경");
+                    }
+                    console.log("유저 변경");
 
-                        // GroupData 멤버 정보 변경
-                        Database.updateBookingGroup(groupID, memberObj);
+                    // GroupData 멤버 정보 변경
+                    Database.updateBookingGroup(groupID, memberObj);
 
-                        var childPathAry = [];
-                        var childPath = `${yymmdd}/${floor}/${roomID}/${beginTime}`
+                    var childPathAry = [];
+                    var childPath = `${yymmdd}/${floor}/${roomID}/${beginTime}`
 
-                        childPathAry.push(childPath);
+                    childPathAry.push(childPath);
 
-                        if(originMemberObj.members !== undefined) {
-                            // Todo 2. 유저별로 예약 삭제 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
-                            Database.setUserBookingData(childPathAry, originMemberObj, true);
+                    if(originMemberObj.members !== undefined) {
+                        // Todo 2. 유저별로 예약 삭제 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
+                        Database.setUserBookingData(childPathAry, originMemberObj, true);
 
-                            // Todo 3. NotificationGroup 삭제 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
-                            Database.setNotificationGroup(childPathAry, originMemberObj, true);
-                        }
-
-                        // Todo 4. 유저별 예약현황, 노티피케이션 그룹 재생성
-                        // 2. 유저별로 예약 생성하기 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
-                        Database.setUserBookingData(childPathAry, memberObj, false);
-
-                        // Todo 3. NotificationGroup 생성하기 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
-                        Database.setNotificationGroup(childPathAry, memberObj, false);
+                        // Todo 3. NotificationGroup 삭제 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
+                        Database.setNotificationGroup(childPathAry, originMemberObj, true);
                     }
 
-                })
+                    // Todo 4. 유저별 예약현황, 노티피케이션 그룹 재생성
+                    // 2. 유저별로 예약 생성하기 (백그라운드 작업) - setUserBookingData(chidPath, memberAry, isRemove)
+                    Database.setUserBookingData(childPathAry, memberObj, false);
+
+                    // Todo 3. NotificationGroup 생성하기 (백그라운드 작업) - setNotificationGroup(bookingPath, memberAry, isRemove)
+                    Database.setNotificationGroup(childPathAry, memberObj, false);
+                }
+
             }
 
             callback(true);
@@ -877,29 +923,6 @@ class Database {
     }
 
     // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
-    static getMyBookingPromise() {
-        try {
-            let myUid = Database.getAuthUid();
-            let today = CommonUtil.getTodayYYMMDD();
-
-            let userDataPath = `${rootUserInfo}${myUid}`;
-            console.log("getMyBooking userDataPath: " + userDataPath);
-
-            var userDataRef = firebase.database().ref(userDataPath);
-
-            return new Promise(function(resolve, reject){
-                userDataRef.orderByKey().startAt(today).on("value", function(snapshot) {
-                    resolve(snapshot);
-                });
-            });
-
-        } catch (error) {
-            console.log('getMyBooking error: ' + error.toString())
-            callback(null);
-        }
-    }
-
-    // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
     static getMyBooking(callback) {
         try {
             console.log("call getMyBooking");
@@ -941,76 +964,55 @@ class Database {
 
                             roomID.forEach( (beginTime) => {
 
+
                                 // console.log("getBookingList beginTime: " + Object.values(beginTime));
                                 beginTimeKey = beginTime.getKey();
+
+                                var bookParams = {
+                                    yymmddKey: yymmddKey,
+                                    floorKey: floorKey,
+                                    roomIDKey: roomIDKey,
+                                    beginTimeKey: beginTimeKey,
+                                    date: `${ yymmddKey.substr(0,4) }. ${ yymmddKey.substr(4,2) }. ${ yymmddKey.substr(6,2) }`
+                                };
+                                console.log("bookParams: " + bookParams);
+
+                                allBookPath.push(bookParams);
                             })
                         })
                     });
-
-                    var bookParams = {
-                        yymmddKey: yymmddKey,
-                        floorKey: floorKey,
-                        roomIDKey: roomIDKey,
-                        beginTimeKey: beginTimeKey,
-                        date: `${ yymmddKey.substr(0,4) }. ${ yymmddKey.substr(4,2) }. ${ yymmddKey.substr(6,2) }`
-                    };
-                    console.log("bookParams: " + bookParams);
-
-                    allBookPath.push(bookParams)
                 });
 
                 console.log("allBookPath: " + allBookPath);
-                var myBooks = [];
-                allBookPath.map( (bookParams) => {
-                    new Promise(resolve => {
-                        resolve(Database.getMatchBook(bookParams.yymmddKey, bookParams.floorKey, bookParams.roomIDKey, bookParams.beginTimeKey));
-                    }).then( (bookDatas) => {
-                        console.log("bookDatas: " + bookDatas);
-                        bookDatas.yymmdd = bookParams.yymmddKey;
-                        bookDatas.beginTime = bookParams.beginTimeKey;
-                        bookDatas.floor = bookParams.floorKey;
-                        bookDatas.roomID = bookParams.roomIDKey;
-                        bookDatas.date = bookParams.date;
-                        myBooks.push(bookDatas);
+
+                new Promise(resolve => {
+                    var myBooks = [];
+                    allBookPath.map( (bookParams) => {
+                        new Promise(resolve => {
+                            resolve(Database.getMatchBook(bookParams.yymmddKey, bookParams.floorKey, bookParams.roomIDKey, bookParams.beginTimeKey));
+                        }).then( (bookDatas) => {
+                            console.log("bookDatas: " + bookDatas);
+                            bookDatas.yymmdd = bookParams.yymmddKey;
+                            bookDatas.beginTime = bookParams.beginTimeKey;
+                            bookDatas.floor = bookParams.floorKey;
+                            bookDatas.roomID = bookParams.roomIDKey;
+                            bookDatas.date = bookParams.date;
+                            myBooks.push(bookDatas);
+                        }).catch( (error) => {
+                            console.log(error);
+                        });
                     });
-                });
 
-                setTimeout(() => {
-                    console.log("Firebase getMyBooking myBooks: " + myBooks);
+                    setTimeout( () => {
+                        resolve(myBooks);
+                    }, 1500);
+                }).then( (myBooks) => {
+                    console.log("allBookPath myBooks: " + myBooks);
                     callback(myBooks);
-                }, 1000);
+                }).catch( (error) => {
+                    console.log("allBookPath error: " + error);
+                });
             });
-
-            // // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
-            // // 오늘 날짜 이상의 데이터만 key 기준으로 정렬해서 데이터 가져옴
-            // userDataRef.orderByKey().startAt(today).on("child_added", function(snapshot) {
-            //
-            //     // BookingModel을 만들어서 재활용
-            //     var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
-            //     tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
-            //
-            //     myBooks.push(tmpBookingModel);
-            //     console.log("getMyBooking child_added myBooks: " + JSON.stringify(myBooks));
-            //
-            //     callback(myBooks);
-            // });
-            //
-            // // callback(myBooks);
-            //
-            // userDataRef.orderByKey().startAt(today).on("child_removed", function(snapshot) {
-            //     // BookingModel을 만들어서 재활용
-            //     var tmpBookingModel = CommonUtil.cloneObject(MyBookingModel);
-            //     tmpBookingModel.setYYMMDD(snapshot.key).setSubObject(snapshot);
-            //
-            //     myBooks.push(tmpBookingModel);
-            //     console.log("getMyBooking child_removed myBooks: " + JSON.stringify(myBooks));
-            //
-            //     callback(myBooks);
-            // });
-            //
-            // callback(myBooks);
-            // === Firebase .on으로 대기 child가 추가,삭제 이벤트 수신 대기 (child_added, child_removed) ===
-
         } catch (error) {
             console.log('getMyBooking error: ' + error.toString())
             callback(null);
