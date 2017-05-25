@@ -19,6 +19,10 @@ class Database {
         return ALL_MEETINGROOM;
     }
 
+    static getFirebase() {
+        return firebase;
+    }
+
     static getBaseRef() {
         return firebase.database().ref();
     }
@@ -29,6 +33,10 @@ class Database {
 
     static getAuthEmail() {
         return firebase.auth().currentUser.email;
+    }
+
+    static firebaseLogout() {
+        return firebase.auth().signOut();
     }
 
     // 유저별 PushToken 저장
@@ -161,27 +169,26 @@ class Database {
     }
 
     // 회의실 목록 통째로 가져오기
-    static async getAllMeetingRoomList() {
-
+    static async getAllMeetingRoomList(callback) {
+        console.log("getAllMeetingRoomList start");
 
         await firebase.database().ref().child(rootMeetingRoom).once('value', (snapshot) => {
             ALL_MEETINGROOM = JSON.parse(JSON.stringify(snapshot));
-            console.log("getAllMeetingRoomList before: " + Object.values(ALL_MEETINGROOM));
 
             snapshot.forEach( (floors) => {
-                console.log("getAllMeetingRoomList floors(obj): " + Object.values(floors));
+                // console.log("getAllMeetingRoomList floors(obj): " + Object.values(floors));
 
                 floors.forEach( (rooms) => {
-                    console.log("getAllMeetingRoomList rooms(obj): " + Object.values(rooms));
+                    // console.log("getAllMeetingRoomList rooms(obj): " + Object.values(rooms));
 
                     var imgURL;
 
                     firebase.storage().ref().child(`${rootMeetingRoom}${rooms.val().img}`).getDownloadURL().then( function(url) {
-                        console.log("getAllMeetingRoomList imgURL: " + url);
-                        console.log("getAllMeetingRoomList floors.key: " + floors.key + " rooms.key: " + rooms.key);
+                        // console.log("getAllMeetingRoomList imgURL: " + url);
+                        // console.log("getAllMeetingRoomList floors.key: " + floors.key + " rooms.key: " + rooms.key);
 
                         ALL_MEETINGROOM[floors.key][rooms.key].imgURL = url;
-                        console.log("getAllMeetingRoomList ALL_MEETINGROOM[floors.key][rooms.key].imgURL: " + ALL_MEETINGROOM[floors.key][rooms.key].imgURL);
+                        // console.log("getAllMeetingRoomList ALL_MEETINGROOM[floors.key][rooms.key].imgURL: " + ALL_MEETINGROOM[floors.key][rooms.key].imgURL);
 
                     }).catch(function(error) {
                         console.log("getAllMeetingRoomList 이미지 로드 오류: " + error);
@@ -190,8 +197,10 @@ class Database {
                 });
             });
 
-            console.log("getAllMeetingRoomList after: " + Object.values(ALL_MEETINGROOM));
+            // console.log("getAllMeetingRoomList after: " + Object.values(ALL_MEETINGROOM));
         });
+
+        callback(true);
     }
 
     // 회의실 정보 가져오기
@@ -925,14 +934,11 @@ class Database {
     // 오늘 날짜 이후 기준으로 내 예약 현황 가져오기
     static getMyBooking(callback) {
         try {
-            console.log("call getMyBooking");
 
             let myUid = Database.getAuthUid();
             let today = CommonUtil.getTodayYYMMDD();
 
             let userDataPath = `${rootUserInfo}${myUid}`;
-            console.log("getMyBooking userDataPath: " + userDataPath);
-
             var userDataRef = firebase.database().ref(userDataPath);
 
             // 내 예약 리스트를 담을 배열
@@ -1023,26 +1029,6 @@ class Database {
     // 예약시 Notification을 보낼수 있게 예약별로 멤버 그룹핑
     static setNotificationGroup(bookingPaths, memberObj, isRemove) {
         try {
-            // const subjectsRef = firebase.database().ref('subjects');
-            // const notificationReqsRef = firebase.database().ref('notificationRequests');
-            // const subjectData = {
-            //   author: 'TJ',
-            //   title: 'NotiTest',
-            // };
-            // const notificationReq = {
-            //   from_username: 'TJ',
-            //   message: `just posted new topic "${this.state.topicText}"`,
-            // };
-            //
-            // const newSubjectKey = subjectsRef.push().key;
-            // const newNotificationReqKey = notificationReqsRef.push().key;
-            //
-            // const updates = {};
-            // updates[`/topics/${newSubjectKey}`] = subjectData;
-            // updates[`/notificationRequests/${newNotificationReqKey}`] = notificationReq;
-            // firebase.database().ref().update(updates);
-
-
             bookingPaths.map( (bookingPath)=> {
                 let notificationGroup = `${rootNotificationGroup}${bookingPath}`;
 

@@ -51,6 +51,7 @@
 		D0A7B19D1FE74BE09F947633 /* libRCTFBLogin.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 491C8AF1052C4F359504EDA8 /* libRCTFBLogin.a */; };
 		E3F9983611D649EFB5C0D502 /* libRNVectorIcons.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00A1753E0BB4F0A9676F6AB /* libRNVectorIcons.a */; };
 		6462296182004C819E3316C5 /* libRNFetchBlob.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8255DEC68778494293DD3CD8 /* libRNFetchBlob.a */; };
+		BCD3E326223043CB914F2900 /* libRCTRestart.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3432FE4C717245C695F6D740 /* libRCTRestart.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -298,6 +299,8 @@
 		F14E3F83C60C465CAA71660A /* libz.tbd */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		AB3CA5521C5D4FEDB01E76DF /* RNFetchBlob.xcodeproj */ = {isa = PBXFileReference; name = "RNFetchBlob.xcodeproj"; path = "../node_modules/react-native-fetch-blob/ios/RNFetchBlob.xcodeproj"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = wrapper.pb-project; explicitFileType = undefined; includeInIndex = 0; };
 		8255DEC68778494293DD3CD8 /* libRNFetchBlob.a */ = {isa = PBXFileReference; name = "libRNFetchBlob.a"; path = "libRNFetchBlob.a"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = archive.ar; explicitFileType = undefined; includeInIndex = 0; };
+		228CBF9A36994ED3BFEBDD4C /* RCTRestart.xcodeproj */ = {isa = PBXFileReference; name = "RCTRestart.xcodeproj"; path = "../node_modules/react-native-restart/ios/RCTRestart.xcodeproj"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = wrapper.pb-project; explicitFileType = undefined; includeInIndex = 0; };
+		3432FE4C717245C695F6D740 /* libRCTRestart.a */ = {isa = PBXFileReference; name = "libRCTRestart.a"; path = "libRCTRestart.a"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = archive.ar; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -331,6 +334,7 @@
 				B6616549C76744FA96E8C57A /* AddressBook.framework in Frameworks */,
 				67ABD9548EB64514A0C9ED44 /* libRNFIRMessaging.a in Frameworks */,
 				6462296182004C819E3316C5 /* libRNFetchBlob.a in Frameworks */,
+				BCD3E326223043CB914F2900 /* libRCTRestart.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -481,6 +485,7 @@
 				7C132A02D53A4AE58E9FD471 /* RNFIRMessaging.xcodeproj */,
 				60B6D4FE7D3948659D1FCB12 /* RNGoogleSignin.xcodeproj */,
 				AB3CA5521C5D4FEDB01E76DF /* RNFetchBlob.xcodeproj */,
+				228CBF9A36994ED3BFEBDD4C /* RCTRestart.xcodeproj */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";
@@ -1094,6 +1099,7 @@
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1114,6 +1120,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
@@ -1187,6 +1194,7 @@
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -1216,6 +1224,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
@@ -1254,6 +1263,7 @@
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.facebook.REACT.BookMeetingRoom-tvOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1278,6 +1288,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
+					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",
 					"\"$(SRCROOT)/$(TARGET_NAME)\"",

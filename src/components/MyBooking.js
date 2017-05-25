@@ -3,6 +3,7 @@ import {
     View,
     Text,
     ListView,
+    RefreshControl,
     TouchableHighlight,
     Dimensions,
     Platform,
@@ -13,10 +14,10 @@ import {
 
 import { hardwareBackPress, exitApp } from 'react-native-back-android';
 
+import RNRestart from 'react-native-restart';
 import RNBottomSheet from 'react-native-bottom-sheet';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-// import FirebaseClient from "../firebase/FirebaseClient";
 import fbDB from '../firebase/Database';
 
 import CommonUtil from '../util/CommonUtil';
@@ -59,11 +60,6 @@ var styles = StyleSheet.create({
     },
 
     rowTimeContainer: {
-        // width: 60,
-        // height: 40,
-        // justifyContent: 'center',
-        // alignItems: 'center',
-
         width: 60,
         height: 60,
         borderRadius: 60/2,
@@ -99,6 +95,12 @@ var styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 
+    sectionRow: {
+        marginLeft: 10,
+        fontSize: 17,
+        color: 'white',
+    },
+
     viewFloatBook: {
         // alignItems:'flex-end',      // 가로 정렬
         // justifyContent:'flex-end',  // 세로 정렬
@@ -122,7 +124,6 @@ var meetingRoomInfo;
 class MyBooking extends Component {
 
     handleHardwareBackPress() {
-        console.log('* Scene1 back press');
         exitApp();
         return false;
     }
@@ -131,7 +132,10 @@ class MyBooking extends Component {
         super(props);
 
         this.state = {
-            ds : new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}),
+            ds : new ListView.DataSource({
+                rowHasChanged: (r1, r2) => r1 !== r2,
+                sectionHeaderHasChanged: (s1, s2) => s1 !== s2
+            }),
             bookingDatas: [],
             placeName: '',
             showProgress: false,
@@ -143,12 +147,13 @@ class MyBooking extends Component {
         this.onClickBook = this.onClickBook.bind(this);
         this.onMoveBook = this.onMoveBook.bind(this);
         this.getPlaceName = this.getPlaceName.bind(this);
+        this.logout = this.logout.bind(this);
     }
 
     componentWillMount() {
-        this.setState({
-            dataSource: this.state.ds.cloneWithRows(this.state.bookingDatas)
-        });
+        // this.setState({
+        //     dataSource: this.state.ds.cloneWithRowsAndSections(this.convertBookingArrayToMap(this.state.bookingDatas))
+        // });
 
         meetingRoomInfo = fbDB.getAllMeetingRoom();
     }
@@ -174,6 +179,18 @@ class MyBooking extends Component {
         DeviceEventEmitter.removeAllListeners('refreshMyBooking');
     }
 
+    logout() {
+        fbDB.firebaseLogout().then( () => {
+            AsyncStorage.removeItem(SecretText.USER_P1_KEY);
+            AsyncStorage.removeItem(SecretText.USER_P2_KEY);
+
+            // Immediately reload the React Native Bundle
+            RNRestart.Restart();
+
+        }).catch( (error) => {
+            console.log("logout error: " + error);
+        });
+    }
 
     getBookingList() {
         this.setState({
@@ -184,7 +201,7 @@ class MyBooking extends Component {
                 fbDB.getMyBooking((myBooks) => {
 
                     var _myBook = myBooks;
-                    console.log("myBooks: " + _myBook);
+                    // console.log("myBooks: " + _myBook);
                     this.setPlaceRoom(_myBook);
                 });
             } catch(error) {
@@ -202,7 +219,7 @@ class MyBooking extends Component {
         try {
             var reWorkList = [];
             tmpBookingLists.map((book) => {
-                console.log("tmpBookingLists book: " + Object.values(book));
+                // console.log("tmpBookingLists book: " + Object.values(book));
 
                 var tmpInfo = meetingRoomInfo[book.floor][book.roomID];
                 // console.log("setPlaceRoom getBookData: " + Object.values(tmpInfo));
@@ -226,11 +243,13 @@ class MyBooking extends Component {
 
         // 리스트 세팅
         this.setState({
-            dataSource: this.state.ds.cloneWithRows(tmpBookingLists),
+            // dataSource: this.state.ds.cloneWithRows(tmpBookingLists),
             bookingDatas: tmpBookingLists,
-        });
+            dataSource: this.state.ds.cloneWithRowsAndSections(this.convertBookingArrayToMap(tmpBookingLists)),
 
-        this.stopProgress();
+        }, () => {
+            this.stopProgress();
+        });
     }
 
     stopProgress() {
@@ -242,7 +261,7 @@ class MyBooking extends Component {
     onClickBook(rowData) {
         // 내가 쓴글일때 수정/삭제 팝업 보여줌
         if(rowData.userID === fbDB.getAuthUid()) {
-            console.log("내가쓴글!! 수정 팝업 보여주자!!");
+            // console.log("내가쓴글!! 수정 팝업 보여주자!!");
             var actionSheetUtil = new BookUpdateRemoveUtil(rowData, this.props.navigator);
 
             return;
@@ -259,7 +278,7 @@ class MyBooking extends Component {
         try {
             fbDB.listenMeetingRoomInfo(rowData.floor, rowData.roomID, (roomInfo)=> {
                 var placeName = `${rowData.floor}층 ${roomInfo.name}`;
-                console.log("getPlaceName: " + placeName);
+                // console.log("getPlaceName: " + placeName);
 
                 return <Text style={styles.rowPlace}>{placeName}</Text>
 
@@ -273,6 +292,28 @@ class MyBooking extends Component {
 
             return <Text style={styles.rowPlace}>{placeName}</Text>
         }
+    }
+
+    convertBookingArrayToMap(_tmpBookingLists) {
+        var bookingCategoryMap = {}; // Create the blank map
+        _tmpBookingLists.forEach(function(booking) {
+            if (!bookingCategoryMap[booking.date]) {
+                // Create an entry in the map for the category if it hasn't yet been created
+                bookingCategoryMap[booking.date] = [];
+            }
+
+            bookingCategoryMap[booking.date].push(booking);
+        });
+
+        return bookingCategoryMap;
+    }
+
+    renderSectionHeader(rowData, section) {
+        return (
+            <View style={{ backgroundColor: 'black', opacity: 0.7, height: 30, justifyContent: 'center' }}>
+                <Text style={styles.sectionRow}>{section}</Text>
+            </View>
+        )
     }
 
     renderMyBook(rowData) {
@@ -328,7 +369,16 @@ class MyBooking extends Component {
                     dataSource={this.state.dataSource}
                     enableEmptySections={true}
                     renderRow={this.renderMyBook}
-                    renderSeparator={CommonUtil.renderSeparator} />
+                    renderSectionHeader={this.renderSectionHeader}
+                    renderSeparator={CommonUtil.renderSeparator}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={this.state.showProgress}
+                            onRefresh={this.getBookingList}
+                            colors={['#1077e5', '#00ff00', '#0000ff']}
+                            progressBackgroundColor="#ffffff"
+                        />
+                    } />
             )
         }
     }
@@ -337,7 +387,11 @@ class MyBooking extends Component {
         return (
             <View style={styles.container}>
 
-                <StatusBar title={SecretText.MY_BOOKING} />
+                <StatusBar
+                    zIndex={1}
+                    title={SecretText.MY_BOOKING}
+                    rightBtnTitle={"로그아웃"}
+                    onClickRight={this.logout} />
 
                 <Loading
                     animating={this.state.showProgress}/>
@@ -361,10 +415,5 @@ class MyBooking extends Component {
         )
     }
 }
-
-// const handleBackButtonPress = ({ navigator }) => {
-//     navigator.pop();
-//     return true;
-// };
 
 module.exports = MyBooking;

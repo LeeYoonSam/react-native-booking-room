@@ -20,4 +20,9 @@ public class MainActivity extends ReactActivity {
         super.onNewIntent(intent);
         setIntent(intent);
     }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
 }

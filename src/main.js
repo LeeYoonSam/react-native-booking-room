@@ -15,7 +15,10 @@ import fbDB from './firebase/Database';
 
 import PushController from "./firebase/PushController";
 
-// var Login = require('./components/login');
+import CommonUtil from "./util/CommonUtil";
+import SecretText from "./consts/SecretText";
+
+var Splash = require('./components/Splash');
 var MyBooking = require('./components/MyBooking');
 var LoginForFirebase = require('./components/LoginForFirebase');
 var MainFloor = require('./components/MainFloor');
@@ -36,36 +39,33 @@ module.exports = backAndroid(React.createClass({
     getInitialState: function() {
         return {
             userLoaded: false,
-            initialView: null,
+            initialView: 'Splash',
             token: "",
-            tokenCopyFeedback: ""
+            tokenCopyFeedback: "",
         };
     },
 
     // 컴포넌트가 마운트 될때 뷰초기화 시작
     componentWillMount: function() {
-        // Firebase.initialise();
-
-        this.getInitialView();
+        // this.getInitialView();
     },
 
     componentDidMount: function() {
         // 앱 시작시 회의실 목록 받아오기
-        fbDB.getAllMeetingRoomList();
+        // fbDB.getAllMeetingRoomList();
     },
 
-    // 로그인 판단해서 어떤 뷰를 보여줄지 결정해서 state 업데이트
-    getInitialView() {
-
-        // 실제 로그인 화면 부터 시작
-        this.setState({
-            userLoaded: true,
-            // 더미 테스트
-            // initialView: "MyBooking",
-
-            initialView: "LoginForFirebase",
-        })
-    },
+    // // 로그인 판단해서 어떤 뷰를 보여줄지 결정해서 state 업데이트
+    // getInitialView() {
+    //     // 실제 로그인 화면 부터 시작
+    //     this.setState({
+    //         userLoaded: true,
+    //         // 더미 테스트
+    //         // initialView: "MyBooking",
+    //
+    //         initialView: "Splash",
+    //     })
+    // },
 
     // 화면 설정 - MyBooking 에서는 뒤로 못가게 처리 (제스쳐 가로채기)
     _configureScene: function(route) {
@@ -88,6 +88,10 @@ module.exports = backAndroid(React.createClass({
         console.log("renderScene: " + route.name + " navigator: " + navigator);
 
         switch (route.name) {
+            case "Splash":
+            return (<Splash navigator={navigator} />);
+                break;
+
             case "MyBooking":
             return (<MyBooking navigator={navigator} />);
                 break;

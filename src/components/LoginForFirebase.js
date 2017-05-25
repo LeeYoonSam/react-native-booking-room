@@ -24,6 +24,7 @@ import DismissKeyboard from "dismissKeyboard";
 
 import CommonStyle from "../styles/Common.css";
 import SecretText from "../consts/SecretText";
+import CommonUtil from "../util/CommonUtil";
 
 import Loading from "./Loading";
 
@@ -49,13 +50,15 @@ class Login extends Component {
     }
 
     async login() {
-
         try {
             await firebase.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
                 .then((userData) => {
                     this.setState({
                         showProgress: false,
                     }, () => {
+                        AsyncStorage.setItem(SecretText.USER_P1_KEY, CommonUtil.encryptByDes(this.state.email));
+                        AsyncStorage.setItem(SecretText.USER_P2_KEY, CommonUtil.encryptByDes(this.state.password));
+
                         this.props.navigator.push({
                             name: 'MyBooking'
                         });
@@ -64,8 +67,15 @@ class Login extends Component {
                 .catch((error) =>
                 {
                     this.dismissProgress();
-
-                    Alert.alert('Login Failed. Please try again '+error);
+                    console.log("LoginFailed error: " + error);
+                    Alert.alert(
+                        '',
+                        '로그인 실패. 다시 시도해주세요.',
+                        [
+                            { text: '확인' },
+                        ],
+                        { cancelable: false }
+                    )
                 });
         } catch (error) {
             this.dismissProgress();

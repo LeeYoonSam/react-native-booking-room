@@ -29,8 +29,6 @@ import CommonConst from "../consts/CommonConst";
 import CommonStyle from "../styles/Common.css";
 import CommonUtil from "../util/CommonUtil";
 
-const window = Dimensions.get('window');
-
 var styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -955,22 +953,31 @@ class BookRoom extends Component {
         });
     }
 
+    // 선택된 유저 삭제
+    removeSelectedUser(user) {
+        // filter를 이용해서 해당 유저를 걸러 낸다.
+        var replaceUsers = this.state.selectedUsers.filter(obj => user.userID != obj.userID);
+
+        // 다시 유저 세팅하기
+        this.callbackSelectedUsers(replaceUsers);
+    }
+
     callbackSelectedUsers(_selectedUsers) {
         if(_selectedUsers.length === 0) {
             this.setState({
                 selectedUsers: [],
-                userSearchTtile: "참석자 검색",
+                // userSearchTtile: "참석자 검색",
             });
         }
         else if(_selectedUsers.length === 1) {
             this.setState({
                 selectedUsers: _selectedUsers,
-                userSearchTtile: `${_selectedUsers[0].userName}`,
+                // userSearchTtile: `${_selectedUsers[0].userName}`,
             });
         } else {
             this.setState({
                 selectedUsers: _selectedUsers,
-                userSearchTtile: `${_selectedUsers[0].userName} 외 ${_selectedUsers.length -1}명`,
+                // userSearchTtile: `${_selectedUsers[0].userName} 외 ${_selectedUsers.length -1}명`,
             });
         }
 
@@ -995,18 +1002,24 @@ class BookRoom extends Component {
             return (
                 <View style={[styles.selectUserContainer, {marginBottom: userContainerBottomMargin}]}>
                     {
-                        this.state.selectedUsers.map((user)=> {
+                        this.state.selectedUsers.map((user, key)=> {
                             console.log("setSelectedUserUI user: " + Object.values(user))
                             return (
-                                <View style={{marginRight: 5}}
-                                    key={`users-${user.userID}`}>
-                                    <Text style={{fontSize: 16, color: 'black', padding:5, borderColor: 'cornflowerblue',
+                                <TouchableWithoutFeedback key={key} onPress={() => {this.removeSelectedUser(user) }}>
+                                    <View style={{marginRight: 5, marginBottom: 5, padding:5, borderColor: 'cornflowerblue',
                                         borderWidth: 1,
                                         borderRadius: 4,
-                                        backgroundColor: '#ffffff'}}>
-                                        {user.userName}
-                                    </Text>
-                                </View>
+                                        backgroundColor: '#ffffff',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'}}
+                                        key={`users-${user.userID}`}>
+
+                                        <Text style={{fontSize: 16, color: 'black', marginRight: 3}}>{user.userName}</Text>
+
+                                        <Icon name='scissors' size={iconSize} color={'crimson'} />
+                                    </View>
+                                </TouchableWithoutFeedback>
                             )
                         })
                     }

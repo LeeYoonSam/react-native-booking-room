@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.evollu.react.fcm.FIRMessagingPackage;
 import com.facebook.react.ReactApplication;
+import com.avishayil.rnrestart.ReactNativeRestartPackage;
 import com.RNFetchBlob.RNFetchBlobPackage;
 import com.dieam.reactnativepushnotification.ReactNativePushNotificationPackage;
 import com.facebook.react.ReactNativeHost;
@@ -28,6 +29,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new ReactNativeRestartPackage(),
             new RNFetchBlobPackage(),
             new ReactNativePushNotificationPackage(),
             new FIRMessagingPackage(),

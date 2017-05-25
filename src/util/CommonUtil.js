@@ -5,6 +5,11 @@ import {
     View,
 } from 'react-native';
 
+import CryptoJS from 'crypto-js';
+import SecretText from "../consts/SecretText";
+
+const keyHex = CryptoJS.enc.Utf8.parse(SecretText.SECURE_KEY);
+
 Array.prototype._matchUserID = function(users) {
 
     var clone =  this.slice();
@@ -73,6 +78,27 @@ Array.prototype._removeMyUid = function(userID) {
 }
 
 module.exports = {
+
+    encryptByDes(text) {
+        var encrypted = CryptoJS.DES.encrypt(text, keyHex, {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.Pkcs7
+        });
+
+        return encrypted.toString();
+    },
+
+    decryptByDES(ciphertext) {
+        // direct decrypt ciphertext
+        var decrypted = CryptoJS.DES.decrypt({
+            ciphertext: CryptoJS.enc.Base64.parse(ciphertext)
+        }, keyHex, {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.Pkcs7
+        });
+
+        return decrypted.toString(CryptoJS.enc.Utf8);
+    },
 
     cloneObject(obj) {
         if (obj === null || typeof(obj) !== 'object')
