@@ -69,7 +69,7 @@ var styles = StyleSheet.create({
 
     rowTimeText: {
         fontSize: 18,
-        color: 'white',
+        color: '#333333',
     },
 
     rowMemoContainer: {
@@ -85,12 +85,12 @@ var styles = StyleSheet.create({
 
     rowMemoTextTitle: {
         fontSize: 16,
-        color: 'aliceblue'
+        color: '#333333'
     },
 
     rowMemoTextUser: {
         fontSize: 12,
-        color: 'aliceblue'
+        color: '#333333'
     },
 });
 
@@ -553,17 +553,16 @@ class MeetingRoomMain extends Component {
     }
 
     _renderTimeTable(rowData) {
-        var baseColor = 'gray';
+        var baseColor = 'lightgrey';
 
         if(rowData.bookType !== undefined) {
             baseColor = rowData.bookType.color;
         }
 
         // 내가 예약한 회의실은 리스트의 시간부분을 다른색으로 해서 구별
-        var isMineColor = 'cornflowerblue';
+        var borderWidth = 0;
         if(rowData.userID === fbDB.getAuthUid()) {
-            // isMine = <Icon name='cube' size={15} color={'blue'} />
-            isMineColor = 'firebrick';
+            borderWidth = 1;
         }
 
         var memo = rowData.bookMemo;
@@ -577,7 +576,7 @@ class MeetingRoomMain extends Component {
                 onPress={() => this.onBookPress(rowData)}>
 
                 <View style={styles.rowContainer}>
-                    <View style={[styles.rowTimeContainer, {backgroundColor: isMineColor}]}>
+                    <View style={[styles.rowTimeContainer, {backgroundColor: 'lightgrey', borderColor: 'dimgrey', borderWidth: borderWidth}]}>
                         <Text style={styles.rowTimeText}>{rowData.hour}</Text>
                     </View>
                     <View style={[styles.rowMemoContainer, {backgroundColor: baseColor}]}>

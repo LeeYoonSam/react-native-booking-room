@@ -152,10 +152,16 @@ module.exports = backAndroid(React.createClass({
                 })} />
 
                 <Navigator
+                    ref='navigator'
                     style={ styles.container }
                     initialRoute={ {name: this.state.initialView} } // 네비게이션 최상위 뷰 설정
                     renderScene={this.renderScene}                  // 화면 렌더링
                     configureScene={ this._configureScene }         // 화면 설정
+                    onDidFocus={(route) => {
+                        if (route.reset) {
+                            this.refs.navigator.immediatelyResetRouteStack([{ name: route.name }])
+                        }
+                    }}
                     />
             </View>
         );

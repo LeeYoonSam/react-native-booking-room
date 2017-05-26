@@ -119,7 +119,8 @@ class Splash extends Component {
                 .then((userData) => {
                     // 로그인 성공시 마이페이지로 이동
                     this.props.navigator.push({
-                        name: 'MyBooking'
+                        name: 'MyBooking',
+                        reset: true
                     });
                 })
                 .catch((error) =>

@@ -80,7 +80,7 @@ var styles = StyleSheet.create({
 
     rowTimeText: {
         fontSize: 24,
-        color: 'white',
+        color: '#333333',
     },
 
     rowDate: {
@@ -151,9 +151,7 @@ class MyBooking extends Component {
     }
 
     componentWillMount() {
-        // this.setState({
-        //     dataSource: this.state.ds.cloneWithRowsAndSections(this.convertBookingArrayToMap(this.state.bookingDatas))
-        // });
+        this.props.navigator.resen
 
         meetingRoomInfo = fbDB.getAllMeetingRoom();
     }
@@ -320,10 +318,9 @@ class MyBooking extends Component {
         // console.log("renderMyBook rowData: " + Object.values(rowData));
         // console.log("renderMyBook rowData.key: " + rowData.yymmdd);
 
-        var isMineColor = 'cornflowerblue';
+        var borderWidth = 0;
         if(rowData.userID === fbDB.getAuthUid()) {
-            // isMine = <Icon name='cube' size={15} color={'blue'} />
-            isMineColor = 'firebrick';
+            borderWidth = 1;
         }
 
         return (
@@ -332,7 +329,7 @@ class MyBooking extends Component {
                 onPress={() => this.onClickBook(rowData)}>
 
                 <View style={styles.rowContainer}>
-                    <View style={[styles.rowTimeContainer, {backgroundColor: isMineColor}]}>
+                    <View style={[styles.rowTimeContainer, {backgroundColor: 'lightgrey', borderColor: 'dimgrey', borderWidth: borderWidth}]}>
                         <Text style={styles.rowTimeText}>{`${rowData.beginTime}시`}</Text>
                     </View>
                     <View style={styles.rowMemoContainer}>
@@ -416,4 +413,9 @@ class MyBooking extends Component {
     }
 }
 
-module.exports = MyBooking;
+const handleBackButtonPress = ({ navigator }) => {
+    exitApp();
+    return true;
+};
+
+module.exports = hardwareBackPress(MyBooking, handleBackButtonPress);

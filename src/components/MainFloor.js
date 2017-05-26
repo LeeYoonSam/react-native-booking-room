@@ -17,7 +17,6 @@ import { hardwareBackPress } from 'react-native-back-android';
 import ScrollableTabView, { ScrollableTabBar, } from 'react-native-scrollable-tab-view';
 
 import fbDB from '../firebase/Database';
-import fbStorage from '../firebase/Storage';
 
 import SecretText from "../consts/SecretText";
 
@@ -49,13 +48,13 @@ var styles = StyleSheet.create({
 
     title: {
         fontSize: 20,
-        color: 'white',
+        color: '#333333',
         marginLeft: 10,
     },
 
     subTitle: {
         fontSize: 12,
-        color: 'white',
+        color: '#333333',
         marginLeft: 10,
     },
 
@@ -66,7 +65,7 @@ var styles = StyleSheet.create({
     },
 
     titleBG: {
-        backgroundColor:'gray',
+        backgroundColor:'lightgrey',
         flexDirection: 'column',
         opacity: 0.6,
         width: window.width / 2,

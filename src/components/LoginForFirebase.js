@@ -60,7 +60,8 @@ class Login extends Component {
                         AsyncStorage.setItem(SecretText.USER_P2_KEY, CommonUtil.encryptByDes(this.state.password));
 
                         this.props.navigator.push({
-                            name: 'MyBooking'
+                            name: 'MyBooking',
+                            reset: true
                         });
                     });
                 })

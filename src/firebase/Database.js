@@ -3,13 +3,16 @@ import CommonConst from "../consts/CommonConst";
 import CommonUtil from "../util/CommonUtil";
 import MyBookingModel from "../models/MyBookingModel";
 
-let rootMeetingRoom = "MeetingRoom/";
-let rootUserData = "UserData/";
+const ROOT_VERSION = 'v1/';
+const ROOT_VERSION_TEST = '';
 
-let rootBookData = "BookData/";
-let rootGroupData = "GroupData/";
-let rootUserInfo = "UserInfo/";
-let rootNotificationGroup = "NotificationGroup/";
+let rootMeetingRoom = `${ROOT_VERSION_TEST}MeetingRoom/`;
+let rootUserData = `${ROOT_VERSION_TEST}UserData/`;
+
+let rootBookData = `${ROOT_VERSION_TEST}BookData/`;
+let rootGroupData = `${ROOT_VERSION_TEST}GroupData/`;
+let rootUserInfo = `${ROOT_VERSION_TEST}UserInfo/`;
+let rootNotificationGroup = `${ROOT_VERSION_TEST}NotificationGroup/`;
 
 var ALL_MEETINGROOM = {};
 
