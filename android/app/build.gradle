@@ -98,10 +98,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('pengtai_booking_key.keystore')
-            storePassword 'pengtaibooking'
-            keyAlias 'pengtai_booking_key'
-            keyPassword 'pengtaibooking'
+            storeFile file('your_keystorefile.keystore')
+            storePassword 'your_storePassword'
+            keyAlias 'your_keyAlias'
+            keyPassword 'your_keyPassword'
         }
     }
     splits {
